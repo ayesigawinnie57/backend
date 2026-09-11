@@ -41,15 +41,23 @@ class DeliverySettingsView(APIView):
 
 
 class DistrictListView(generics.ListCreateAPIView):
-    permission_classes = (permissions.IsAdminUser,)
     serializer_class = DistrictSerializer
     queryset = District.objects.all()
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
 
 class DistrictDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = (permissions.IsAdminUser,)
     serializer_class = DistrictSerializer
     queryset = District.objects.all()
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
 
 class AdminUserDetailView(APIView):
