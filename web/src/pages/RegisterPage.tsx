@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react'
+import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, Eye, EyeOff, UserPlus } from 'lucide-react'
 import { authApi, LOGO } from '../lib/api'

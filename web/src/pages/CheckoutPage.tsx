@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { CheckCircle, ChevronDown, CreditCard, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
 import { cartApi, hasAccessToken, ordersApi, type ApiOrder, type CartItem } from '../lib/api'
 import Navbar from '../landing/Navbar'
@@ -11,7 +11,6 @@ const money = (value: string | number) => Number(value).toLocaleString()
 type Form = { name: string; phone: string; region: string; district: string; village: string; note: string }
 
 export default function CheckoutPage() {
-  const navigate = useNavigate()
   const [items, setItems] = useState<CartItem[]>([])
   const [form, setForm] = useState<Form>({ name: '', phone: '', region: '', district: '', village: '', note: '' })
   const [loading, setLoading] = useState(true)
@@ -26,7 +25,7 @@ export default function CheckoutPage() {
   const set = (key: keyof Form, value: string) => setForm(current => ({ ...current, [key]: value }))
   const subtotal = items.reduce((total, item) => total + Number(item.product_price) * item.quantity, 0)
 
-  const placeOrder = async (event: FormEvent) => {
+  const placeOrder = async (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
     if (!hasAccessToken()) { setError('Please sign in before placing your order.'); return }

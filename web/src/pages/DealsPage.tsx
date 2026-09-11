@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flame, Timer } from 'lucide-react'
-import ProductCard from '../components/ProductCard'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 import { productsApi, toFlashSale, type FlashSale } from '../lib/api'

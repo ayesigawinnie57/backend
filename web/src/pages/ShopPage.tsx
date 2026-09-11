@@ -27,7 +27,7 @@ export default function ShopPage() {
     ]).then(([productResponse, categoryResponse]) => {
       const raw = Array.isArray(productResponse.data) ? productResponse.data : (productResponse.data as any).results ?? []
       const available = raw.map(toProduct)
-      setProducts(saleOnly ? available.filter(product => product.originalPrice && product.originalPrice > product.price) : available)
+      setProducts(saleOnly ? available.filter((product: Product) => product.originalPrice && product.originalPrice > product.price) : available)
       const rawCategories = Array.isArray(categoryResponse.data) ? categoryResponse.data : (categoryResponse.data as any).results ?? []
       setCategories(rawCategories)
       setError(false)

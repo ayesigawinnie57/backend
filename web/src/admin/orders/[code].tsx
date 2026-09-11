@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Package, MapPin, Phone, FileText, CheckCircle, Clock, Truck, XCircle, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, Package, MapPin, FileText, CheckCircle, Clock, Truck, XCircle, ShoppingBag } from 'lucide-react'
 import { adminOrdersApi, type ApiAdminOrder } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 

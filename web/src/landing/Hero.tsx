@@ -14,7 +14,6 @@ const messages = [
 export default function Hero() {
   const [products, setProducts] = useState<(Product & { message: string })[]>([])
   const [index, setIndex] = useState(0)
-  const [sliding, setSliding] = useState(false)
   const trackRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -37,7 +36,6 @@ export default function Hero() {
           trackRef.current.style.transition = 'none'
           trackRef.current.style.transform = 'translateX(0)'
         }
-        setSliding(false)
       }, 560)
     }, 3500)
     return () => clearInterval(id)
