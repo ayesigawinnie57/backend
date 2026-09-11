@@ -27,7 +27,6 @@ export default function Hero() {
     if (products.length < 2) return
     const id = setInterval(() => {
       if (!trackRef.current) return
-      setSliding(true)
       trackRef.current.style.transition = 'transform 550ms cubic-bezier(0.37,0,0.63,1)'
       trackRef.current.style.transform = 'translateX(-100%)'
       setTimeout(() => {
