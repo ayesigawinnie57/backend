@@ -1,24 +1,9 @@
-# Local secrets and environment files
 .env
-.env.*
-!.env.example
-**/.env
-**/.env.*
-!**/.env.example
-
-# Dependencies and build output
-**/node_modules/
-**/dist/
-**/.expo/
-**/.next/
-
-# Python local environment and generated files
-backend/venv/
-backend/__pycache__/
-backend/**/__pycache__/
-backend/*.sqlite3
+db.sqlite3
+__pycache__/
 *.pyc
-
-# Local tooling
-.vscode/
+*.pyo
+staticfiles/
+payments.log
+*.log
 .DS_Store
