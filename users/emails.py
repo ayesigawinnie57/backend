@@ -7,7 +7,7 @@ def _send(payload: dict):
     resend.Emails.send(payload)
 
 FROM = 'Majo Gadgets <noreply@educfarm.com>'
-LOGO = 'https://res.cloudinary.com/d5qqtsou/image/upload/v1788691351/Majo_Gadgets_logo_an2hbc.png'
+LOGO = 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789111152/Majo_Gadgets_logo_an2hbc.png'
 
 # ── Icon paths ───────────────────────────────────────────────────────────────
 ICO_CHECK       = '<polyline points="20 6 9 17 4 12"/>'
@@ -198,6 +198,45 @@ def send_welcome_email(name: str, email: str):
       <p style="margin:28px 0 0;font-size:13px;color:#94A3B8">If you have any questions, just reply to this email — we're always happy to help.</p>
     '''
     _send({'from': FROM, 'to': email, 'subject': 'Welcome to Majo Gadgets!', 'html': _wrap(body)})
+
+
+def send_order_placed_email(name: str, email: str, order_code: str, total: str, items: list, delivery_address: str):
+    body = f'''
+      <div style="text-align:center;margin-bottom:24px">
+        {_circle_icon(ICO_SHOPPING, '#EFF6FF', '#1E3A8A')}
+        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Order Placed!</h2>
+        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>, we've received your order.</p>
+      </div>
+
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        Thank you for your order! 🎉 Your order <strong>#{order_code}</strong> has been placed and is awaiting confirmation.
+      </p>
+      <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7">
+        We'll notify you once it's confirmed and being prepared for shipment.
+      </p>
+
+      {_progress_bar('pending')}
+
+      <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0F172A;letter-spacing:1.5px">{order_code}</p>
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Delivering To</p>
+        <p style="margin:0 0 16px;font-size:13px;color:#334155">{delivery_address}</p>
+        <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
+        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Items Ordered</p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          {_item_rows(items)}
+          <tr>
+            <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#0F172A">Total</td>
+            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#0F172A;text-align:right">UGX {total}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.7">Thank you for shopping with Majo Gadgets! 🛍️</p>
+      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">— The Majo Gadgets Team</p>
+    '''
+    _send({'from': FROM, 'to': email, 'subject': f'Order Placed — #{order_code}', 'html': _wrap(body)})
 
 
 def send_order_confirmed_email(name: str, email: str, order_code: str, total: str, items: list, delivery_address: str):

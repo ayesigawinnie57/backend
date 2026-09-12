@@ -10,6 +10,7 @@ from .models import Order, ServiceRating, Payment
 from .serializers import OrderSerializer, ServiceRatingSerializer, PaymentSerializer
 from users.models import Notification
 from users.emails import (
+    send_order_placed_email,
     send_order_confirmed_email,
     send_order_shipped_email,
     send_order_delivered_email,
@@ -51,9 +52,9 @@ class OrderListCreateView(generics.ListCreateAPIView):
         order = serializer.save(user=self.request.user)
         try:
             items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': _product_image(i.product)} for i in order.items.select_related('product').all()]
-            send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
+            send_order_placed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
         except Exception:
-            pass
+            logger.exception('Failed to send order placed email for order %s', order.code)
         _notify(order.user, 'order', f'Order #{order.code} Placed', f'Your order has been placed and is being reviewed. Total: UGX {order.total:,.0f}.')
 
 
