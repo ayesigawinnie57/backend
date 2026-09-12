@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     OrderListCreateView, OrderDetailView, OrderCancelView, ServiceRatingView,
+    ReturnRequestView, ReturnRequestListView,
     AdminOrderListView, AdminOrderDetailView, AdminOrderConfirmView, AdminOrderCancelView,
     AdminOrderShipView, AdminOrderDeliverView,
     InitiatePaymentView, PesapalIPNView, AdminPaymentsView,
@@ -8,6 +9,7 @@ from .views import (
 
 urlpatterns = [
     path('', OrderListCreateView.as_view(), name='order-list'),
+    path('returns/', ReturnRequestListView.as_view(), name='return-list'),
     path('admin/', AdminOrderListView.as_view(), name='admin-order-list'),
     path('admin/payments/', AdminPaymentsView.as_view(), name='admin-payments'),
     path('admin/<str:code>/', AdminOrderDetailView.as_view(), name='admin-order-detail'),
@@ -20,4 +22,5 @@ urlpatterns = [
     path('<str:code>/cancel/', OrderCancelView.as_view(), name='order-cancel'),
     path('<str:code>/pay/', InitiatePaymentView.as_view(), name='order-pay'),
     path('<str:code>/rate/', ServiceRatingView.as_view(), name='order-rate'),
+    path('<str:code>/return/', ReturnRequestView.as_view(), name='order-return'),
 ]

@@ -6,8 +6,8 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.core.cache import cache
 from django.db import transaction
-from .models import Order, ServiceRating, Payment
-from .serializers import OrderSerializer, ServiceRatingSerializer, PaymentSerializer
+from .models import Order, ServiceRating, Payment, ReturnRequest
+from .serializers import OrderSerializer, ServiceRatingSerializer, PaymentSerializer, ReturnRequestSerializer
 from users.models import Notification
 from users.emails import (
     send_admin_new_order_email,
@@ -116,6 +116,48 @@ class ServiceRatingView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(order=order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ReturnRequestView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, code):
+        try:
+            order = Order.objects.get(code=code, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if order.status != 'delivered':
+            return Response({'detail': 'Only delivered orders can be returned.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if hasattr(order, 'return_request'):
+            return Response({'detail': 'A return request already exists for this order.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        reason = request.data.get('reason', '').strip()
+        if not reason:
+            return Response({'detail': 'A reason is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        ret = ReturnRequest.objects.create(order=order, reason=reason)
+        _notify(order.user, 'order', f'Return Request Submitted — #{order.code}', 'Your return request has been received and is under review.')
+        return Response(ReturnRequestSerializer(ret).data, status=status.HTTP_201_CREATED)
+
+    def get(self, request, code):
+        try:
+            order = Order.objects.get(code=code, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not hasattr(order, 'return_request'):
+            return Response(None)
+        return Response(ReturnRequestSerializer(order.return_request).data)
+
+
+class ReturnRequestListView(generics.ListAPIView):
+    serializer_class = ReturnRequestSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return ReturnRequest.objects.filter(order__user=self.request.user).select_related('order').order_by('-created_at')
 
 
 # ── Admin views ──────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Order, OrderItem, ServiceRating, Payment
+from .models import Order, OrderItem, ServiceRating, Payment, ReturnRequest
 from products.models import Product
 from products.serializers import ProductSerializer
 
@@ -57,3 +57,12 @@ class ServiceRatingSerializer(serializers.ModelSerializer):
         model = ServiceRating
         fields = ('id', 'overall', 'areas', 'area_ratings', 'comment', 'created_at')
         read_only_fields = ('id', 'created_at')
+
+
+class ReturnRequestSerializer(serializers.ModelSerializer):
+    order_code = serializers.CharField(source='order.code', read_only=True)
+
+    class Meta:
+        model = ReturnRequest
+        fields = ('id', 'order_code', 'reason', 'status', 'admin_note', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'status', 'admin_note', 'created_at', 'updated_at')
