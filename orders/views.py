@@ -130,7 +130,7 @@ class AdminOrderConfirmView(APIView):
 
     def post(self, request, code):
         try:
-            order = Order.objects.get(code=code)
+            order = Order.objects.select_related('user').get(code=code)
         except Order.DoesNotExist:
             return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -143,7 +143,7 @@ class AdminOrderConfirmView(APIView):
             items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': _product_image(i.product)} for i in order.items.select_related('product').all()]
             send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
         except Exception:
-            pass
+            logger.exception('Failed to send order confirmed email for order %s', code)
         return Response(OrderSerializer(order).data)
 
 
@@ -152,7 +152,7 @@ class AdminOrderCancelView(APIView):
 
     def post(self, request, code):
         try:
-            order = Order.objects.get(code=code)
+            order = Order.objects.select_related('user').get(code=code)
         except Order.DoesNotExist:
             return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -171,7 +171,7 @@ class AdminOrderCancelView(APIView):
         try:
             send_order_cancelled_email(order.user.name, order.user.email, order.code, reason)
         except Exception:
-            pass
+            logger.exception('Failed to send order cancelled email for order %s', code)
         return Response(OrderSerializer(order).data)
 
 
@@ -180,7 +180,7 @@ class AdminOrderShipView(APIView):
 
     def post(self, request, code):
         try:
-            order = Order.objects.get(code=code)
+            order = Order.objects.select_related('user').get(code=code)
         except Order.DoesNotExist:
             return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -192,7 +192,7 @@ class AdminOrderShipView(APIView):
         try:
             send_order_shipped_email(order.user.name, order.user.email, order.code, order.delivery_address)
         except Exception:
-            pass
+            logger.exception('Failed to send order shipped email for order %s', code)
         return Response(OrderSerializer(order).data)
 
 
@@ -201,7 +201,7 @@ class AdminOrderDeliverView(APIView):
 
     def post(self, request, code):
         try:
-            order = Order.objects.get(code=code)
+            order = Order.objects.select_related('user').get(code=code)
         except Order.DoesNotExist:
             return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -232,7 +232,7 @@ class AdminOrderDeliverView(APIView):
                 f'{settings.FRONTEND_URL}/rate/{order.code}',
             )
         except Exception:
-            pass
+            logger.exception('Failed to send order delivered email for order %s', code)
         return Response(OrderSerializer(order).data)
 
 
