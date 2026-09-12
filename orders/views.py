@@ -14,6 +14,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+def _product_image(product) -> str:
+    try:
+        return product.image.url if product.image else ''
+    except Exception:
+        return ''
+
+
 PAYMENT_RATE_LIMIT = 5
 PAYMENT_RATE_WINDOW = 60
 
@@ -28,7 +36,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         order = serializer.save(user=self.request.user)
         try:
-            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': i.product.image.url if i.product.image else ''} for i in order.items.select_related('product').all()]
+            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': _product_image(i.product)} for i in order.items.select_related('product').all()]
             send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
         except Exception:
             pass
@@ -126,7 +134,7 @@ class AdminOrderConfirmView(APIView):
         order.status = 'processing'
         order.save(update_fields=['status', 'updated_at'])
         try:
-            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': i.product.image.url if i.product.image else ''} for i in order.items.select_related('product').all()]
+            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': _product_image(i.product)} for i in order.items.select_related('product').all()]
             send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
         except Exception:
             pass
