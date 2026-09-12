@@ -28,7 +28,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         order = serializer.save(user=self.request.user)
         try:
-            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}'} for i in order.items.select_related('product').all()]
+            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': i.product.image.url if i.product.image else ''} for i in order.items.select_related('product').all()]
             send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
         except Exception:
             pass
@@ -126,7 +126,7 @@ class AdminOrderConfirmView(APIView):
         order.status = 'processing'
         order.save(update_fields=['status', 'updated_at'])
         try:
-            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}'} for i in order.items.select_related('product').all()]
+            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': i.product.image.url if i.product.image else ''} for i in order.items.select_related('product').all()]
             send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
         except Exception:
             pass
