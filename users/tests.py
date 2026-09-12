@@ -2,7 +2,22 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
+from users import emails
+
 User = get_user_model()
+
+
+class EmailProgressTemplateTests(TestCase):
+    def test_order_progress_bar_contains_all_steps_and_active_line(self):
+        html = emails._progress_bar('shipped')
+
+        self.assertIn('Order Progress', html)
+        self.assertIn('Placed', html)
+        self.assertIn('Confirmed', html)
+        self.assertIn('Shipped', html)
+        self.assertIn('Delivered', html)
+        self.assertIn('#F59E0B', html)
+        self.assertIn('#E2E8F0', html)
 
 
 class ProfilePasswordFlowTests(TestCase):

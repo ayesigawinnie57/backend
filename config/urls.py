@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from .email_preview import email_preview
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -7,4 +8,5 @@ urlpatterns = [
     path('api/products/', include('products.urls')),
     path('api/orders/', include('orders.urls')),
     path('api/settings/', include('settings_app.urls')),
+    path('email-preview/', email_preview),
 ]
