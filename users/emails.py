@@ -1,7 +1,10 @@
 import resend
 from django.conf import settings
 
-resend.api_key = settings.RESEND_API_KEY
+
+def _send(payload: dict):
+    resend.api_key = settings.RESEND_API_KEY
+    resend.Emails.send(payload)
 
 FROM = 'Majo Gadgets <noreply@educfarm.com>'
 LOGO = 'https://res.cloudinary.com/d5qqtsou/image/upload/v1788691351/Majo_Gadgets_logo_an2hbc.png'
@@ -194,7 +197,7 @@ def send_welcome_email(name: str, email: str):
       </a>
       <p style="margin:28px 0 0;font-size:13px;color:#94A3B8">If you have any questions, just reply to this email — we're always happy to help.</p>
     '''
-    resend.Emails.send({'from': FROM, 'to': email, 'subject': 'Welcome to Majo Gadgets!', 'html': _wrap(body)})
+    _send({'from': FROM, 'to': email, 'subject': 'Welcome to Majo Gadgets!', 'html': _wrap(body)})
 
 
 def send_order_confirmed_email(name: str, email: str, order_code: str, total: str, items: list, delivery_address: str):
@@ -239,7 +242,7 @@ def send_order_confirmed_email(name: str, email: str, order_code: str, total: st
       <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.7">Thank you for shopping with Majo Gadgets! 🛍️</p>
       <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">— The Majo Gadgets Team</p>
     '''
-    resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Order Confirmed — #{order_code}', 'html': _wrap(body)})
+    _send({'from': FROM, 'to': email, 'subject': f'Order Confirmed — #{order_code}', 'html': _wrap(body)})
 
 
 def send_order_shipped_email(name: str, email: str, order_code: str, delivery_address: str):
@@ -266,7 +269,7 @@ def send_order_shipped_email(name: str, email: str, order_code: str, delivery_ad
 
       <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">If you have any questions about your delivery, reply to this email and we&#39;ll be happy to help.</p>
     '''
-    resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Your Order is Shipped — #{order_code}', 'html': _wrap(body)})
+    _send({'from': FROM, 'to': email, 'subject': f'Your Order is Shipped — #{order_code}', 'html': _wrap(body)})
 
 
 def send_order_delivered_email(name: str, email: str, order_code: str, total: str = '', items: list | None = None, delivery_address: str = ''):
@@ -311,7 +314,7 @@ def send_order_delivered_email(name: str, email: str, order_code: str, total: st
       <a href="{settings.FRONTEND_URL}/#/rate/{order_code}" style="display:inline-block;padding:14px 32px;background:#F59E0B !important;background-color:#F59E0B !important;color:#ffffff !important;border:1px solid #F59E0B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important;line-height:1.4;vertical-align:middle">Rate Your Order</a>
       <p style="margin:28px 0 0;font-size:13px;color:#94A3B8;line-height:1.6">— The Majo Gadgets Team</p>
     '''
-    resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Order Delivered — #{order_code}', 'html': _wrap(body)})
+    _send({'from': FROM, 'to': email, 'subject': f'Order Delivered — #{order_code}', 'html': _wrap(body)})
 
 
 def send_order_rating_email(name: str, email: str, order_code: str, rating_url: str):
@@ -341,7 +344,7 @@ def send_order_rating_email(name: str, email: str, order_code: str, rating_url: 
       <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.7">Thank you for shopping with Majo Gadgets! ❤️</p>
       <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">— The Majo Gadgets Team</p>
     '''
-    resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Rate Your Experience — #{order_code}', 'html': _wrap(body)})
+    _send({'from': FROM, 'to': email, 'subject': f'Rate Your Experience — #{order_code}', 'html': _wrap(body)})
 
 
 def send_order_cancelled_email(name: str, email: str, order_code: str, reason: str):
@@ -361,7 +364,7 @@ def send_order_cancelled_email(name: str, email: str, order_code: str, reason: s
       <a href="{settings.FRONTEND_URL}" style="display:inline-block;padding:14px 32px;background:#F59E0B !important;background-color:#F59E0B !important;color:#ffffff !important;border:1px solid #F59E0B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important;line-height:1.4;vertical-align:middle">Continue Shopping &rarr;</a>
       <p style="margin:28px 0 0;font-size:13px;color:#94A3B8;line-height:1.6">We hope to serve you again soon. Thank you for choosing Majo Gadgets.</p>
     '''
-    resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Order Cancelled — #{order_code}', 'html': _wrap(body)})
+    _send({'from': FROM, 'to': email, 'subject': f'Order Cancelled — #{order_code}', 'html': _wrap(body)})
 
 
 def send_password_reset_email(name: str, email: str, reset_url: str):
@@ -389,4 +392,4 @@ def send_password_reset_email(name: str, email: str, reset_url: str):
       <p style="margin:0 0 24px;font-size:12px;color:#16A34A;word-break:break-all">{reset_url}</p>
       <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">If you didn't request a password reset, you can safely ignore this email.</p>
     '''
-    resend.Emails.send({'from': FROM, 'to': email, 'subject': 'Reset your Majo Gadgets password', 'html': _wrap(body)})
+    _send({'from': FROM, 'to': email, 'subject': 'Reset your Majo Gadgets password', 'html': _wrap(body)})
