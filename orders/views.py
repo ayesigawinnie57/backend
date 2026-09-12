@@ -8,7 +8,13 @@ from django.core.cache import cache
 from django.db import transaction
 from .models import Order, ServiceRating, Payment
 from .serializers import OrderSerializer, ServiceRatingSerializer, PaymentSerializer
-from users.emails import send_order_confirmed_email, send_order_shipped_email, send_order_delivered_email, send_order_cancelled_email
+from users.emails import (
+    send_order_confirmed_email,
+    send_order_shipped_email,
+    send_order_delivered_email,
+    send_order_cancelled_email,
+    send_order_rating_email,
+)
 import requests as http_requests
 import logging
 
@@ -205,7 +211,26 @@ class AdminOrderDeliverView(APIView):
         order.status = 'delivered'
         order.save(update_fields=['status', 'updated_at'])
         try:
-            send_order_delivered_email(order.user.name, order.user.email, order.code)
+            items = [{
+                'name': i.product.name,
+                'qty': i.quantity,
+                'price': f'{i.price:,.0f}',
+                'image': _product_image(i.product),
+            } for i in order.items.select_related('product').all()]
+            send_order_delivered_email(
+                order.user.name,
+                order.user.email,
+                order.code,
+                f'{order.total:,.0f}',
+                items,
+                order.delivery_address,
+            )
+            send_order_rating_email(
+                order.user.name,
+                order.user.email,
+                order.code,
+                f'{settings.FRONTEND_URL}/rate/{order.code}',
+            )
         except Exception:
             pass
         return Response(OrderSerializer(order).data)

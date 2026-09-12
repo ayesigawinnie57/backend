@@ -6,13 +6,27 @@ resend.api_key = settings.RESEND_API_KEY
 FROM = 'Majo Gadgets <noreply@educfarm.com>'
 LOGO = 'https://res.cloudinary.com/d5qqtsou/image/upload/v1788691351/Majo_Gadgets_logo_an2hbc.png'
 
-# ── Inline SVG icons (Lucide) ─────────────────────────────────────────────────
+# ── Email-safe glyphs ────────────────────────────────────────────────────────
 def _icon(path_d: str, color: str = '#ffffff', size: int = 20) -> str:
+    glyph_map = {
+        ICO_CHECK: '✓',
+        ICO_PACKAGE: '▣',
+        ICO_TRUCK: '🚚',
+        ICO_STAR: '★',
+        ICO_X_CIRCLE: '✕',
+        ICO_LOCK: '🔒',
+        ICO_CLOCK: '◔',
+        ICO_MAIL: '✉',
+        ICO_SHOPPING: '🛒',
+        ICO_HEART: '♥',
+        ICO_SETTINGS: '⚙',
+        ICO_MAP_PIN: '⌖',
+        ICO_PHONE: '☎',
+    }
+    glyph = glyph_map.get(path_d, '•')
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
-        f'viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" '
-        f'stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle">'
-        f'{path_d}</svg>'
+        f'<span style="display:inline-block;font-size:{size}px;line-height:1;color:{color};'
+        f'font-family:Arial,Helvetica,sans-serif;font-weight:700;vertical-align:middle">{glyph}</span>'
     )
 
 # icon paths
@@ -90,8 +104,8 @@ def _progress_bar(active: str) -> str:
         is_active = idx == active_idx
         circle_bg = '#F59E0B' if done else '#E2E8F0'
         icon_color = '#ffffff' if done else '#94A3B8'
-        label_color = '#F59E0B' if is_active else ('#334155' if done else '#94A3B8')
-        label_weight = '700' if is_active else ('600' if done else '400')
+        label_color = '#F59E0B' if is_active or done else '#94A3B8'
+        label_weight = '700' if is_active or done else '400'
         svg = _icon(icon_path, icon_color, 18)
 
         if idx < len(steps) - 1:
@@ -188,14 +202,27 @@ def send_order_confirmed_email(name: str, email: str, order_code: str, total: st
       <div style="text-align:center;margin-bottom:24px">
         {_circle_icon(ICO_CHECK, '#ECFDF5', '#059669')}
         <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Order Confirmed!</h2>
-        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>, we've received your order and it's being prepared.</p>
+        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>,</p>
       </div>
+
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        Great news! 🎉 Your order <strong>#{order_code}</strong> has been confirmed.
+      </p>
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        We’re now preparing your items for shipment.
+      </p>
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        <strong>Order total:</strong> UGX {total}
+      </p>
+      <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7">
+        We’ll keep you updated as your order moves through the delivery process.
+      </p>
 
       {_progress_bar('processing')}
 
       <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
-        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#16A34A;letter-spacing:1.5px">{order_code}</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F59E0B;letter-spacing:1.5px">{order_code}</p>
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Delivering To</p>
         <p style="margin:0 0 16px;font-size:13px;color:#334155">{delivery_address}</p>
         <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
@@ -209,7 +236,8 @@ def send_order_confirmed_email(name: str, email: str, order_code: str, total: st
         </table>
       </div>
 
-      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">We'll email you again once your order is shipped. Keep your order code handy for tracking.</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.7">Thank you for shopping with Majo Gadgets! 🛍️</p>
+      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">— The Majo Gadgets Team</p>
     '''
     resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Order Confirmed — #{order_code}', 'html': _wrap(body)})
 
@@ -240,27 +268,79 @@ def send_order_shipped_email(name: str, email: str, order_code: str, delivery_ad
     resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Your Order is Shipped — #{order_code}', 'html': _wrap(body)})
 
 
-def send_order_delivered_email(name: str, email: str, order_code: str):
+def send_order_delivered_email(name: str, email: str, order_code: str, total: str = '', items: list | None = None, delivery_address: str = ''):
+    items = items or []
+    item_rows = _item_rows(items) if items else ''
     body = f'''
       <div style="text-align:center;margin-bottom:24px">
         {_circle_icon(ICO_CHECK, '#ECFDF5', '#059669')}
         <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Order Delivered!</h2>
-        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>, your order has been successfully delivered.</p>
+        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>,</p>
       </div>
+
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        Your order <strong>#{order_code}</strong> has been delivered! 🎉📦
+      </p>
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        We hope you enjoy your new purchase from Majo Gadgets.
+      </p>
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        Thank you for trusting us with your order. We truly appreciate your support and hope to see you again soon.
+      </p>
+      <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7">
+        Enjoy your new gadget! ❤️
+      </p>
 
       {_progress_bar('delivered')}
 
       <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
-        {_info_row(ICO_CHECK,    'Order successfully delivered')}
-        {_info_row(ICO_STAR,     "We'd love to hear your feedback")}
-        {_info_row(ICO_SHOPPING, 'Thank you for shopping with Majo Gadgets')}
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F59E0B;letter-spacing:1.5px">{order_code}</p>
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Your Items</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px">
+          {item_rows}
+          <tr>
+            <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#0F172A">Total</td>
+            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#F59E0B;text-align:right">{f'UGX {total}' if total else '—'}</td>
+          </tr>
+        </table>
       </div>
 
       <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.7">Enjoyed your experience? Please take a moment to rate your order — it helps us serve you better.</p>
       <a href="{settings.FRONTEND_URL}/rate/{order_code}" style="display:inline-block;padding:14px 32px;background:#F59E0B !important;background-color:#F59E0B !important;color:#ffffff !important;border:1px solid #F59E0B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important;line-height:1.4;vertical-align:middle">Rate Your Order</a>
-      <p style="margin:28px 0 0;font-size:13px;color:#94A3B8;line-height:1.6">If you have any issues with your order, please reply to this email within 7 days.</p>
+      <p style="margin:28px 0 0;font-size:13px;color:#94A3B8;line-height:1.6">— The Majo Gadgets Team</p>
     '''
     resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Order Delivered — #{order_code}', 'html': _wrap(body)})
+
+
+def send_order_rating_email(name: str, email: str, order_code: str, rating_url: str):
+    body = f'''
+      <div style="text-align:center;margin-bottom:24px">
+        {_circle_icon(ICO_STAR, '#FEF3C7', '#F59E0B')}
+        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Rate Your Experience</h2>
+        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>,</p>
+      </div>
+
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        We’d love to hear about your experience with Majo Gadgets! ⭐
+      </p>
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        Your order <strong>#{order_code}</strong> has been delivered, and we’d appreciate it if you could take a moment to rate the <strong>service and delivery experience</strong>.
+      </p>
+      <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7">
+        Your feedback helps us improve and provide an even better shopping experience for you and other customers.
+      </p>
+
+      <div style="text-align:center;margin-bottom:28px">
+        <a href="{rating_url}" style="display:inline-block;padding:14px 40px;background:#F59E0B !important;background-color:#F59E0B !important;color:#ffffff !important;border:1px solid #F59E0B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important">
+          Rate your experience
+        </a>
+      </div>
+
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.7">Thank you for shopping with Majo Gadgets! ❤️</p>
+      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">— The Majo Gadgets Team</p>
+    '''
+    resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Rate Your Experience — #{order_code}', 'html': _wrap(body)})
 
 
 def send_order_cancelled_email(name: str, email: str, order_code: str, reason: str):
