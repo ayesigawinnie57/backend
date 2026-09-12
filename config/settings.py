@@ -152,6 +152,10 @@ LOGGING = {
     },
 }
 
+# Resend email
+RESEND_API_KEY = config('RESEND_API_KEY', default='')
+FRONTEND_URL = config('FRONTEND_URL', default='https://ayesigawinnie57.github.io/web')
+
 # Pesapal
 PESAPAL_CONSUMER_KEY = config('PESAPAL_CONSUMER_KEY', default='')
 PESAPAL_CONSUMER_SECRET = config('PESAPAL_CONSUMER_SECRET', default='')

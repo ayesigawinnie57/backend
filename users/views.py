@@ -1,11 +1,15 @@
+import secrets
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model, authenticate
+from django.core.cache import cache
+from django.conf import settings
 from .serializers import RegisterSerializer, UserSerializer, UpdateProfileSerializer, CartItemSerializer, WishlistItemSerializer
 from .models import CartItem, WishlistItem
+from .emails import send_welcome_email, send_password_reset_email
 
 User = get_user_model()
 
@@ -80,7 +84,49 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         refresh = RefreshToken.for_user(user)
+        try:
+            send_welcome_email(user.name, user.email)
+        except Exception:
+            pass
         return Response({'access': str(refresh.access_token), 'refresh': str(refresh)}, status=status.HTTP_201_CREATED)
+
+
+class ForgotPasswordView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        email = request.data.get('email', '').strip().lower()
+        user = User.objects.filter(email=email).first()
+        # Always return 200 to avoid email enumeration
+        if user:
+            token = secrets.token_urlsafe(32)
+            cache.set(f'pwd_reset:{token}', user.pk, timeout=3600)
+            reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+            try:
+                send_password_reset_email(user.name, user.email, reset_url)
+            except Exception:
+                pass
+        return Response({'detail': 'If that email exists, a reset link has been sent.'})
+
+
+class ResetPasswordView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        token = request.data.get('token', '')
+        password = request.data.get('password', '')
+        if not token or not password:
+            return Response({'detail': 'Token and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        user_pk = cache.get(f'pwd_reset:{token}')
+        if not user_pk:
+            return Response({'detail': 'Invalid or expired reset link.'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(pk=user_pk).first()
+        if not user:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_400_BAD_REQUEST)
+        user.set_password(password)
+        user.save()
+        cache.delete(f'pwd_reset:{token}')
+        return Response({'detail': 'Password reset successful.'})
 
 
 class ProfileView(generics.RetrieveAPIView):

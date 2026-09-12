@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import LoginView, RegisterView, ProfileView, CartView, CartItemView, WishlistView, WishlistItemView, AdminUsersView, AdminUserDetailView
+from .views import LoginView, RegisterView, ProfileView, CartView, CartItemView, WishlistView, WishlistItemView, AdminUsersView, AdminUserDetailView, ForgotPasswordView, ResetPasswordView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -13,4 +13,6 @@ urlpatterns = [
     path('wishlist/<int:product_id>/', WishlistItemView.as_view(), name='wishlist-item'),
     path('admin/users/', AdminUsersView.as_view(), name='admin-users'),
     path('admin/users/<int:pk>/', AdminUserDetailView.as_view(), name='admin-user-detail'),
+    path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
+    path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
 ]
