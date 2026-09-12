@@ -222,7 +222,7 @@ def send_order_confirmed_email(name: str, email: str, order_code: str, total: st
 
       <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
-        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F59E0B;letter-spacing:1.5px">{order_code}</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0F172A;letter-spacing:1.5px">{order_code}</p>
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Delivering To</p>
         <p style="margin:0 0 16px;font-size:13px;color:#334155">{delivery_address}</p>
         <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
@@ -231,7 +231,7 @@ def send_order_confirmed_email(name: str, email: str, order_code: str, total: st
           {_item_rows(items)}
           <tr>
             <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#0F172A">Total</td>
-            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#F59E0B;text-align:right">UGX {total}</td>
+            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#0F172A;text-align:right">UGX {total}</td>
           </tr>
         </table>
       </div>
@@ -255,7 +255,7 @@ def send_order_shipped_email(name: str, email: str, order_code: str, delivery_ad
 
       <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
-        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#16A34A;letter-spacing:1.5px">{order_code}</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0F172A;letter-spacing:1.5px">{order_code}</p>
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Delivering To</p>
         <p style="margin:0 0 16px;font-size:13px;color:#334155">{safe_address}</p>
         <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
@@ -296,13 +296,13 @@ def send_order_delivered_email(name: str, email: str, order_code: str, total: st
 
       <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
-        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F59E0B;letter-spacing:1.5px">{order_code}</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0F172A;letter-spacing:1.5px">{order_code}</p>
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Your Items</p>
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px">
           {item_rows}
           <tr>
             <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#0F172A">Total</td>
-            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#F59E0B;text-align:right">{f'UGX {total}' if total else '—'}</td>
+            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#0F172A;text-align:right">{f'UGX {total}' if total else '—'}</td>
           </tr>
         </table>
       </div>
