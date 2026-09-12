@@ -1,8 +1,15 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import CartItem, WishlistItem
+from .models import CartItem, WishlistItem, Notification
 
 User = get_user_model()
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ('id', 'type', 'title', 'body', 'read', 'created_at')
+        read_only_fields = ('id', 'type', 'title', 'body', 'created_at')
 
 
 class RegisterSerializer(serializers.ModelSerializer):

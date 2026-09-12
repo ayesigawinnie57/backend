@@ -8,6 +8,7 @@ from django.core.cache import cache
 from django.db import transaction
 from .models import Order, ServiceRating, Payment
 from .serializers import OrderSerializer, ServiceRatingSerializer, PaymentSerializer
+from users.models import Notification
 from users.emails import (
     send_order_confirmed_email,
     send_order_shipped_email,
@@ -28,6 +29,13 @@ def _product_image(product) -> str:
         return ''
 
 
+def _notify(user, ntype: str, title: str, body: str):
+    try:
+        Notification.objects.create(user=user, type=ntype, title=title, body=body)
+    except Exception:
+        pass
+
+
 PAYMENT_RATE_LIMIT = 5
 PAYMENT_RATE_WINDOW = 60
 
@@ -46,6 +54,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
             send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
         except Exception:
             pass
+        _notify(order.user, 'order', f'Order #{order.code} Placed', f'Your order has been placed and is being reviewed. Total: UGX {order.total:,.0f}.')
 
 
 class OrderDetailView(generics.RetrieveAPIView):
@@ -78,6 +87,7 @@ class OrderCancelView(APIView):
             send_order_cancelled_email(order.user.name, order.user.email, order.code, 'Cancelled by customer.')
         except Exception:
             pass
+        _notify(order.user, 'order', f'Order #{order.code} Cancelled', 'Your order has been cancelled as requested.')
         return Response(OrderSerializer(order).data)
 
 
@@ -144,6 +154,7 @@ class AdminOrderConfirmView(APIView):
             send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
         except Exception:
             logger.exception('Failed to send order confirmed email for order %s', code)
+        _notify(order.user, 'order', f'Order #{order.code} Confirmed', 'Your order has been confirmed and is being prepared for shipment.')
         return Response(OrderSerializer(order).data)
 
 
@@ -172,6 +183,7 @@ class AdminOrderCancelView(APIView):
             send_order_cancelled_email(order.user.name, order.user.email, order.code, reason)
         except Exception:
             logger.exception('Failed to send order cancelled email for order %s', code)
+        _notify(order.user, 'order', f'Order #{order.code} Cancelled', f'Your order was cancelled. Reason: {reason}')
         return Response(OrderSerializer(order).data)
 
 
@@ -193,6 +205,7 @@ class AdminOrderShipView(APIView):
             send_order_shipped_email(order.user.name, order.user.email, order.code, order.delivery_address)
         except Exception:
             logger.exception('Failed to send order shipped email for order %s', code)
+        _notify(order.user, 'order', f'Order #{order.code} Shipped', 'Your order is on its way! Our delivery team will contact you before arrival.')
         return Response(OrderSerializer(order).data)
 
 
@@ -233,6 +246,8 @@ class AdminOrderDeliverView(APIView):
             )
         except Exception:
             logger.exception('Failed to send order delivered email for order %s', code)
+        _notify(order.user, 'order', f'Order #{order.code} Delivered', 'Your order has been delivered! Enjoy your new gadget. ❤️')
+        _notify(order.user, 'service_rating', f'Rate Your Experience — #{order.code}', f'How was your Majo Gadgets experience? Tap to rate your order.|{order.code}')
         return Response(OrderSerializer(order).data)
 
 

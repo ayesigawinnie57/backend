@@ -7,8 +7,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model, authenticate
 from django.core.cache import cache
 from django.conf import settings
-from .serializers import RegisterSerializer, UserSerializer, UpdateProfileSerializer, CartItemSerializer, WishlistItemSerializer
-from .models import CartItem, WishlistItem
+from .serializers import RegisterSerializer, UserSerializer, UpdateProfileSerializer, CartItemSerializer, WishlistItemSerializer, NotificationSerializer
+from .models import CartItem, WishlistItem, Notification
 from .emails import send_welcome_email, send_password_reset_email
 
 User = get_user_model()
@@ -88,6 +88,7 @@ class RegisterView(generics.CreateAPIView):
             send_welcome_email(user.name, user.email)
         except Exception:
             pass
+        Notification.objects.create(user=user, type='welcome', title='Welcome to Majo Gadgets!', body='Thanks for joining! Explore our latest gadgets and enjoy exclusive deals made just for you.')
         return Response({'access': str(refresh.access_token), 'refresh': str(refresh)}, status=status.HTTP_201_CREATED)
 
 
@@ -233,3 +234,41 @@ class WishlistItemView(APIView):
     def delete(self, request, product_id):
         WishlistItem.objects.filter(user=request.user, product_id=product_id).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class NotificationsView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        qs = Notification.objects.filter(user=request.user)
+        return Response(NotificationSerializer(qs, many=True).data)
+
+    def delete(self, request):
+        """Delete all notifications for the user."""
+        Notification.objects.filter(user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class NotificationDetailView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def patch(self, request, pk):
+        try:
+            n = Notification.objects.get(pk=pk, user=request.user)
+        except Notification.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        n.read = True
+        n.save(update_fields=['read'])
+        return Response(NotificationSerializer(n).data)
+
+    def delete(self, request, pk):
+        Notification.objects.filter(pk=pk, user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class NotificationMarkAllReadView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        Notification.objects.filter(user=request.user, read=False).update(read=True)
+        return Response({'status': 'ok'})

@@ -3,6 +3,29 @@ from django.db import models
 import cloudinary.models
 
 
+class Notification(models.Model):
+    TYPE_CHOICES = [
+        ('order', 'Order'),
+        ('welcome', 'Welcome'),
+        ('promo', 'Promo'),
+        ('system', 'System'),
+        ('service_rating', 'Service Rating'),
+        ('product_rating', 'Product Rating'),
+    ]
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='notifications')
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='system')
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.user.email} — {self.title}'
+
+
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:

@@ -1,6 +1,13 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import LoginView, RegisterView, ProfileView, CartView, CartItemView, WishlistView, WishlistItemView, AdminUsersView, AdminUserDetailView, ForgotPasswordView, ResetPasswordView
+from .views import (
+    LoginView, RegisterView, ProfileView,
+    CartView, CartItemView,
+    WishlistView, WishlistItemView,
+    AdminUsersView, AdminUserDetailView,
+    ForgotPasswordView, ResetPasswordView,
+    NotificationsView, NotificationDetailView, NotificationMarkAllReadView,
+)
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -15,4 +22,7 @@ urlpatterns = [
     path('admin/users/<int:pk>/', AdminUserDetailView.as_view(), name='admin-user-detail'),
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
+    path('notifications/', NotificationsView.as_view(), name='notifications'),
+    path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='notifications-mark-all-read'),
+    path('notifications/<int:pk>/', NotificationDetailView.as_view(), name='notification-detail'),
 ]
