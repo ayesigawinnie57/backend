@@ -155,6 +155,7 @@ LOGGING = {
 # Resend email
 RESEND_API_KEY = config('RESEND_API_KEY', default='')
 FRONTEND_URL = config('FRONTEND_URL', default='https://ayesigawinnie57.github.io/web')
+ADMIN_EMAIL = config('ADMIN_EMAIL', default='ayesigawinnie57@gmail.com')
 
 # Pesapal
 PESAPAL_CONSUMER_KEY = config('PESAPAL_CONSUMER_KEY', default='')

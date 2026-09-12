@@ -10,6 +10,7 @@ from .models import Order, ServiceRating, Payment
 from .serializers import OrderSerializer, ServiceRatingSerializer, PaymentSerializer
 from users.models import Notification
 from users.emails import (
+    send_admin_new_order_email,
     send_order_placed_email,
     send_order_confirmed_email,
     send_order_shipped_email,
@@ -50,11 +51,15 @@ class OrderListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         order = serializer.save(user=self.request.user)
+        items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': _product_image(i.product)} for i in order.items.select_related('product').all()]
         try:
-            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': _product_image(i.product)} for i in order.items.select_related('product').all()]
             send_order_placed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
         except Exception:
             logger.exception('Failed to send order placed email for order %s', order.code)
+        try:
+            send_admin_new_order_email(order.code, order.user.name, order.user.email, f'{order.total:,.0f}', items, order.delivery_address)
+        except Exception:
+            logger.exception('Failed to send admin new order email for order %s', order.code)
         _notify(order.user, 'order', f'Order #{order.code} Placed', f'Your order has been placed and is being reviewed. Total: UGX {order.total:,.0f}.')
 
 

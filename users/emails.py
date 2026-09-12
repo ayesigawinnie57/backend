@@ -200,6 +200,40 @@ def send_welcome_email(name: str, email: str):
     _send({'from': FROM, 'to': email, 'subject': 'Welcome to Majo Gadgets!', 'html': _wrap(body)})
 
 
+def send_admin_new_order_email(order_code: str, customer_name: str, customer_email: str, total: str, items: list, delivery_address: str):
+    admin_url = f'{settings.FRONTEND_URL}/#/admin/orders/{order_code}'
+    body = f'''
+      <div style="text-align:center;margin-bottom:24px">
+        {_circle_icon(ICO_SHOPPING, '#FEF3C7', '#F59E0B')}
+        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">New Order Received!</h2>
+        <p style="margin:0;font-size:14px;color:#64748B">A customer just placed an order.</p>
+      </div>
+
+      <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0F172A;letter-spacing:1.5px">{order_code}</p>
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Customer</p>
+        <p style="margin:0 0 12px;font-size:13px;color:#334155">{customer_name} &mdash; {customer_email}</p>
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Delivery Address</p>
+        <p style="margin:0 0 16px;font-size:13px;color:#334155">{delivery_address}</p>
+        <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
+        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Items Ordered</p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          {_item_rows(items)}
+          <tr>
+            <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#0F172A">Total</td>
+            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#0F172A;text-align:right">UGX {total}</td>
+          </tr>
+        </table>
+      </div>
+
+      <a href="{admin_url}" style="display:inline-block;padding:14px 32px;background:#071A2B !important;background-color:#071A2B !important;color:#ffffff !important;border:1px solid #071A2B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important">
+        View &amp; Confirm Order &rarr;
+      </a>
+    '''
+    _send({'from': FROM, 'to': settings.ADMIN_EMAIL, 'subject': f'New Order #{order_code} — UGX {total}', 'html': _wrap(body)})
+
+
 def send_order_placed_email(name: str, email: str, order_code: str, total: str, items: list, delivery_address: str):
     body = f'''
       <div style="text-align:center;margin-bottom:24px">
