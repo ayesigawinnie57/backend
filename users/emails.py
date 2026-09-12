@@ -3,7 +3,7 @@ from django.conf import settings
 
 resend.api_key = settings.RESEND_API_KEY
 
-FROM = 'Majo Gadgets <onboarding@resend.dev>'
+FROM = 'Majo Gadgets <noreply@educfarm.com>'
 
 
 def send_welcome_email(name: str, email: str):
