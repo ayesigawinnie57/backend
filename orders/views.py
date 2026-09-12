@@ -242,7 +242,7 @@ class AdminOrderDeliverView(APIView):
                 order.user.name,
                 order.user.email,
                 order.code,
-                f'{settings.FRONTEND_URL}/rate/{order.code}',
+                f'{settings.FRONTEND_URL}/#/rate/{order.code}',
             )
         except Exception:
             logger.exception('Failed to send order delivered email for order %s', code)
