@@ -49,9 +49,9 @@ def _circle_icon(path_d: str, bg: str, icon_color: str = '#ffffff', size: int = 
     """Icon inside a colored circle — used as email section header."""
     svg = _icon(path_d, icon_color, 24)
     return (
-        f'<div style="width:{size}px;height:{size}px;border-radius:50%;background:{bg};'
-        f'margin:0 auto 12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:{size}px">'
-        f'<span style="display:inline-block;margin-top:{size//2 - 12}px">{svg}</span></div>'
+        f'<table cellpadding="0" cellspacing="0" style="margin:0 auto 12px"><tr><td align="center" valign="middle" '
+        f'style="width:{size}px;height:{size}px;border-radius:50%;background:{bg};text-align:center">'
+        f'{svg}</td></tr></table>'
     )
 
 
@@ -114,18 +114,18 @@ def _progress_bar(active: str) -> str:
                 f'<td align="center" valign="middle" style="width:25%;padding:0">'
                 f'<table width="100%" cellpadding="0" cellspacing="0"><tr>'
                 f'<td align="center" valign="middle" style="padding:0">'
-                f'<div style="width:40px;height:40px;border-radius:50%;background:{circle_bg};margin:0 auto;display:flex;align-items:center;justify-content:center">'
-                f'<span style="display:inline-block;line-height:0">{svg}</span>'
-                f'</div></td>'
+                f'<table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>'
+                f'<td align="center" valign="middle" style="width:40px;height:40px;border-radius:50%;background:{circle_bg};text-align:center">'
+                f'{svg}</td></tr></table></td>'
                 f'<td valign="middle" style="width:100%;padding:0"><div style="height:3px;background:{line_color};margin-left:6px;margin-right:6px;border-radius:999px"></div></td>'
                 f'</tr></table></td>'
             )
         else:
             circle_cells += (
                 f'<td align="center" valign="middle" style="width:25%;padding:0">'
-                f'<div style="width:40px;height:40px;border-radius:50%;background:{circle_bg};margin:0 auto;display:flex;align-items:center;justify-content:center">'
-                f'<span style="display:inline-block;line-height:0">{svg}</span>'
-                f'</div></td>'
+                f'<table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>'
+                f'<td align="center" valign="middle" style="width:40px;height:40px;border-radius:50%;background:{circle_bg};text-align:center">'
+                f'{svg}</td></tr></table></td>'
             )
 
         label_cells += (
