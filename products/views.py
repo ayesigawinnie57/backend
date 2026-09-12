@@ -19,16 +19,40 @@ from .permissions import IsAdminOrReadOnly
 from orders.models import OrderItem
 
 
+CATEGORY_CACHE_TTL = 60 * 30  # 30 minutes
+FLASH_SALE_CACHE_TTL = 60 * 5  # 5 minutes
+
+
 class CategoryListView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
+
+    def list(self, request, *args, **kwargs):
+        cached = cache.get('categories:list')
+        if cached is not None:
+            return Response(cached)
+        response = super().list(request, *args, **kwargs)
+        cache.set('categories:list', response.data, CATEGORY_CACHE_TTL)
+        return response
+
+    def perform_create(self, serializer):
+        serializer.save()
+        cache.delete('categories:list')
 
 
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
+
+    def perform_update(self, serializer):
+        serializer.save()
+        cache.delete('categories:list')
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        cache.delete('categories:list')
 
 
 PRODUCT_CACHE_TTL = 60 * 15  # 15 minutes
@@ -133,11 +157,33 @@ class FlashSaleListCreateView(generics.ListCreateAPIView):
             qs = qs.filter(is_active=True, ends_at__gt=timezone.now())
         return qs
 
+    def list(self, request, *args, **kwargs):
+        active = request.query_params.get('active')
+        cache_key = 'flashsales:active' if active == '1' else 'flashsales:all'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, FLASH_SALE_CACHE_TTL)
+        return response
+
+    def perform_create(self, serializer):
+        serializer.save()
+        cache.delete_many(['flashsales:active', 'flashsales:all'])
+
 
 class FlashSaleDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = FlashSale.objects.select_related('product__category').prefetch_related('product__images')
     serializer_class = FlashSaleSerializer
     permission_classes = (permissions.IsAdminUser,)
+
+    def perform_update(self, serializer):
+        serializer.save()
+        cache.delete_many(['flashsales:active', 'flashsales:all'])
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        cache.delete_many(['flashsales:active', 'flashsales:all'])
 
 
 # ── Product Reviews ──────────────────────────────────────────────────────────
