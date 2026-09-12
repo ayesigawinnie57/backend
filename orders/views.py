@@ -8,6 +8,7 @@ from django.core.cache import cache
 from django.db import transaction
 from .models import Order, ServiceRating, Payment
 from .serializers import OrderSerializer, ServiceRatingSerializer, PaymentSerializer
+from users.emails import send_order_confirmed_email, send_order_shipped_email, send_order_delivered_email, send_order_cancelled_email
 import requests as http_requests
 import logging
 
@@ -25,7 +26,12 @@ class OrderListCreateView(generics.ListCreateAPIView):
         return Order.objects.filter(user=self.request.user).prefetch_related('items__product')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        order = serializer.save(user=self.request.user)
+        try:
+            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}'} for i in order.items.select_related('product').all()]
+            send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
+        except Exception:
+            pass
 
 
 class OrderDetailView(generics.RetrieveAPIView):
@@ -54,6 +60,10 @@ class OrderCancelView(APIView):
 
         order.status = 'cancelled'
         order.save(update_fields=['status', 'updated_at'])
+        try:
+            send_order_cancelled_email(order.user.name, order.user.email, order.code, 'Cancelled by customer.')
+        except Exception:
+            pass
         return Response(OrderSerializer(order).data)
 
 
@@ -115,6 +125,11 @@ class AdminOrderConfirmView(APIView):
 
         order.status = 'processing'
         order.save(update_fields=['status', 'updated_at'])
+        try:
+            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}'} for i in order.items.select_related('product').all()]
+            send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
+        except Exception:
+            pass
         return Response(OrderSerializer(order).data)
 
 
@@ -139,6 +154,10 @@ class AdminOrderCancelView(APIView):
         order.status = 'cancelled'
         order.cancel_reason = reason
         order.save(update_fields=['status', 'cancel_reason', 'updated_at'])
+        try:
+            send_order_cancelled_email(order.user.name, order.user.email, order.code, reason)
+        except Exception:
+            pass
         return Response(OrderSerializer(order).data)
 
 
@@ -156,6 +175,10 @@ class AdminOrderShipView(APIView):
 
         order.status = 'shipped'
         order.save(update_fields=['status', 'updated_at'])
+        try:
+            send_order_shipped_email(order.user.name, order.user.email, order.code, order.delivery_address)
+        except Exception:
+            pass
         return Response(OrderSerializer(order).data)
 
 
@@ -173,6 +196,10 @@ class AdminOrderDeliverView(APIView):
 
         order.status = 'delivered'
         order.save(update_fields=['status', 'updated_at'])
+        try:
+            send_order_delivered_email(order.user.name, order.user.email, order.code)
+        except Exception:
+            pass
         return Response(OrderSerializer(order).data)
 
 
