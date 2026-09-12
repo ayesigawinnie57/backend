@@ -24,7 +24,7 @@ FLASH_SALE_CACHE_TTL = 60 * 5  # 5 minutes
 
 
 class CategoryListView(generics.ListCreateAPIView):
-    queryset = Category.objects.all()
+    queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
 
@@ -66,7 +66,7 @@ class ProductListView(generics.ListCreateAPIView):
     ordering_fields = ('price', 'rating', 'created_at')
 
     def get_queryset(self):
-        qs = Product.objects.all().select_related('category').prefetch_related('images')
+        qs = Product.objects.all().select_related('category').prefetch_related('images').order_by('-created_at')
         category = self.request.query_params.get('category')
         if category:
             qs = qs.filter(category__slug=category)
