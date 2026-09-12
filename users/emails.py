@@ -243,6 +243,7 @@ def send_order_confirmed_email(name: str, email: str, order_code: str, total: st
 
 
 def send_order_shipped_email(name: str, email: str, order_code: str, delivery_address: str):
+    safe_address = (delivery_address or '').replace('{', '{{').replace('}', '}}')
     body = f'''
       <div style="text-align:center;margin-bottom:24px">
         {_circle_icon(ICO_TRUCK, '#DCFCE7', '#16A34A')}
@@ -256,14 +257,14 @@ def send_order_shipped_email(name: str, email: str, order_code: str, delivery_ad
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
         <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#16A34A;letter-spacing:1.5px">{order_code}</p>
         <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Delivering To</p>
-        <p style="margin:0 0 16px;font-size:13px;color:#334155">{delivery_address}</p>
+        <p style="margin:0 0 16px;font-size:13px;color:#334155">{safe_address}</p>
         <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
         {_info_row(ICO_PACKAGE,  'Your package is on the way')}
         {_info_row(ICO_MAP_PIN,  'Please ensure someone is available to receive it')}
         {_info_row(ICO_PHONE,    'Our delivery team may call you before arrival')}
       </div>
 
-      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">If you have any questions about your delivery, reply to this email and we'll be happy to help.</p>
+      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">If you have any questions about your delivery, reply to this email and we&#39;ll be happy to help.</p>
     '''
     resend.Emails.send({'from': FROM, 'to': email, 'subject': f'Your Order is Shipped — #{order_code}', 'html': _wrap(body)})
 
