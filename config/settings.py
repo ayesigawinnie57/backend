@@ -124,9 +124,14 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
-# Cache (used for payment rate limiting)
+# Cache
+REDIS_URL = os.environ.get('REDIS_URL', '')
 CACHES = {
     'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'},
+    } if REDIS_URL else {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }

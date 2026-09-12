@@ -1,6 +1,7 @@
 import bleach
 from html import escape
 
+from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Count
@@ -30,6 +31,9 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAdminOrReadOnly,)
 
 
+PRODUCT_CACHE_TTL = 60 * 15  # 15 minutes
+
+
 class ProductListView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
     permission_classes = (IsAdminOrReadOnly,)
@@ -44,17 +48,38 @@ class ProductListView(generics.ListCreateAPIView):
             qs = qs.filter(category__slug=category)
         return qs
 
+    def list(self, request, *args, **kwargs):
+        if request.method != 'GET' or request.query_params:
+            return super().list(request, *args, **kwargs)
+        cached = cache.get('products:list')
+        if cached is not None:
+            return Response(cached)
+        response = super().list(request, *args, **kwargs)
+        cache.set('products:list', response.data, PRODUCT_CACHE_TTL)
+        return response
+
     def perform_create(self, serializer):
         cover = self.request.FILES.get('image')
         product = serializer.save(**(({'image': cover}) if cover else {}))
         for i, img in enumerate(self.request.FILES.getlist('images')):
             ProductImage.objects.create(product=product, image=img, order=i)
+        cache.delete('products:list')
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all().select_related('category').prefetch_related('images')
     serializer_class = ProductSerializer
     permission_classes = (IsAdminOrReadOnly,)
+
+    def retrieve(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        cache_key = f'products:detail:{pk}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+        response = super().retrieve(request, *args, **kwargs)
+        cache.set(cache_key, response.data, PRODUCT_CACHE_TTL)
+        return response
 
     def perform_update(self, serializer):
         cover = self.request.FILES.get('image')
@@ -64,6 +89,13 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
             start = product.images.count()
             for i, img in enumerate(files):
                 ProductImage.objects.create(product=product, image=img, order=start + i)
+        cache.delete(f'products:detail:{product.pk}')
+        cache.delete('products:list')
+
+    def perform_destroy(self, instance):
+        cache.delete(f'products:detail:{instance.pk}')
+        cache.delete('products:list')
+        instance.delete()
 
 
 class ProductImageDeleteView(APIView):
