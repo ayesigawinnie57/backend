@@ -41,7 +41,7 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('name', 'email', 'phone', 'current_password', 'new_password', 'password_confirm', 'password', 'is_staff')
+        fields = ('name', 'email', 'phone', 'avatar', 'current_password', 'new_password', 'password_confirm', 'password', 'is_staff')
 
     def validate(self, attrs):
         current_password = attrs.get('current_password')
