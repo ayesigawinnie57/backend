@@ -230,6 +230,7 @@ def send_admin_new_order_email(order_code: str, customer_name: str, customer_ema
       <a href="{admin_url}" style="display:inline-block;padding:14px 32px;background:#071A2B !important;background-color:#071A2B !important;color:#ffffff !important;border:1px solid #071A2B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important">
         View &amp; Confirm Order &rarr;
       </a>
+      <p style="margin:16px 0 0;font-size:13px;color:#94A3B8">Or track it at: <a href="{settings.FRONTEND_URL}/orders/{order_code}" style="color:#1E3A8A !important">{settings.FRONTEND_URL}/orders/{order_code}</a></p>
     '''
     _send({'from': FROM, 'to': settings.ADMIN_EMAIL, 'subject': f'New Order #{order_code} — UGX {total}', 'html': _wrap(body)})
 

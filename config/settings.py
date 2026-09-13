@@ -152,6 +152,8 @@ LOGGING = {
     },
 }
 
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+
 # Resend email
 RESEND_API_KEY = config('RESEND_API_KEY', default='')
 FRONTEND_URL = config('FRONTEND_URL', default='https://www.majogadgets.com')

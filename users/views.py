@@ -272,3 +272,36 @@ class NotificationMarkAllReadView(APIView):
     def post(self, request):
         Notification.objects.filter(user=request.user, read=False).update(read=True)
         return Response({'status': 'ok'})
+
+
+class GoogleLoginView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        credential = request.data.get('credential', '')
+        if not credential:
+            return Response({'detail': 'Google credential is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            import urllib.request, json as _json
+            with urllib.request.urlopen(f'https://www.googleapis.com/oauth2/v3/userinfo?access_token={credential}') as r:
+                info = _json.loads(r.read())
+        except Exception:
+            return Response({'detail': 'Invalid Google token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        email = info.get('email', '').lower()
+        name = info.get('name', '') or email.split('@')[0]
+        if not email:
+            return Response({'detail': 'Could not get email from Google.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user, created = User.objects.get_or_create(email=email, defaults={'name': name})
+        if created:
+            user.set_unusable_password()
+            user.save()
+            try:
+                send_welcome_email(user.name, user.email)
+            except Exception:
+                pass
+            Notification.objects.create(user=user, type='welcome', title='Welcome to Majo Gadgets!', body='Thanks for joining! Explore our latest gadgets and enjoy exclusive deals made just for you.')
+
+        refresh = RefreshToken.for_user(user)
+        return Response({'access': str(refresh.access_token), 'refresh': str(refresh)})
