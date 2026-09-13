@@ -154,7 +154,7 @@ LOGGING = {
 
 # Resend email
 RESEND_API_KEY = config('RESEND_API_KEY', default='')
-FRONTEND_URL = config('FRONTEND_URL', default='https://ayesigawinnie57.github.io/web')
+FRONTEND_URL = config('FRONTEND_URL', default='https://www.majogadgets.com')
 ADMIN_EMAIL = config('ADMIN_EMAIL', default='ayesigawinnie57@gmail.com')
 
 # Pesapal
