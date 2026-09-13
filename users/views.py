@@ -303,5 +303,46 @@ class GoogleLoginView(APIView):
                 pass
             Notification.objects.create(user=user, type='welcome', title='Welcome to Majo Gadgets!', body='Thanks for joining! Explore our latest gadgets and enjoy exclusive deals made just for you.')
 
+        # If profile is incomplete, return a temporary token for profile completion
+        if not user.phone or not user.district:
+            import uuid
+            tmp = str(uuid.uuid4())
+            cache.set(f'google_profile:{tmp}', user.pk, timeout=600)
+            return Response({'needs_profile': True, 'tmp_token': tmp, 'name': user.name, 'email': user.email})
+
+        refresh = RefreshToken.for_user(user)
+        return Response({'access': str(refresh.access_token), 'refresh': str(refresh)})
+
+
+class CompleteGoogleProfileView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        tmp = request.data.get('tmp_token', '')
+        if not tmp:
+            return Response({'detail': 'Invalid session.'}, status=status.HTTP_400_BAD_REQUEST)
+        user_pk = cache.get(f'google_profile:{tmp}')
+        if not user_pk:
+            return Response({'detail': 'Session expired. Please sign in again.'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(pk=user_pk).first()
+        if not user:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        phone = request.data.get('phone', '').strip()
+        region = request.data.get('region', '').strip()
+        district = request.data.get('district', '').strip()
+        village = request.data.get('village', '').strip()
+
+        if not phone or not region or not district:
+            return Response({'detail': 'Phone, region and district are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.phone = phone
+        user.region = region
+        user.district = district
+        user.village = village
+        user.country = 'Uganda'
+        user.save()
+        cache.delete(f'google_profile:{tmp}')
+
         refresh = RefreshToken.for_user(user)
         return Response({'access': str(refresh.access_token), 'refresh': str(refresh)})

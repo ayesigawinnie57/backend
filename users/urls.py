@@ -7,13 +7,14 @@ from .views import (
     AdminUsersView, AdminUserDetailView,
     ForgotPasswordView, ResetPasswordView,
     NotificationsView, NotificationDetailView, NotificationMarkAllReadView,
-    GoogleLoginView,
+    GoogleLoginView, CompleteGoogleProfileView,
 )
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('login/google/', GoogleLoginView.as_view(), name='google-login'),
+    path('login/google/complete/', CompleteGoogleProfileView.as_view(), name='google-login-complete'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('cart/', CartView.as_view(), name='cart'),
