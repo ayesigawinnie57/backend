@@ -303,12 +303,15 @@ class GoogleLoginView(APIView):
                 pass
             Notification.objects.create(user=user, type='welcome', title='Welcome to Majo Gadgets!', body='Thanks for joining! Explore our latest gadgets and enjoy exclusive deals made just for you.')
 
-        # If profile is incomplete, return a temporary token for profile completion
         if not user.phone or not user.district:
-            import uuid
-            tmp = str(uuid.uuid4())
-            cache.set(f'google_profile:{tmp}', user.pk, timeout=600)
-            return Response({'needs_profile': True, 'tmp_token': tmp, 'name': user.name, 'email': user.email})
+            # Issue a short-lived JWT encoding just the user pk — no server-side storage needed
+            from rest_framework_simplejwt.tokens import AccessToken
+            from datetime import timedelta
+            token = AccessToken()
+            token.set_exp(lifetime=timedelta(minutes=10))
+            token['user_id'] = user.pk
+            token['profile_setup'] = True
+            return Response({'needs_profile': True, 'tmp_token': str(token), 'name': user.name, 'email': user.email})
 
         refresh = RefreshToken.for_user(user)
         return Response({'access': str(refresh.access_token), 'refresh': str(refresh)})
@@ -321,9 +324,15 @@ class CompleteGoogleProfileView(APIView):
         tmp = request.data.get('tmp_token', '')
         if not tmp:
             return Response({'detail': 'Invalid session.'}, status=status.HTTP_400_BAD_REQUEST)
-        user_pk = cache.get(f'google_profile:{tmp}')
-        if not user_pk:
+        try:
+            from rest_framework_simplejwt.tokens import AccessToken
+            token = AccessToken(tmp)
+            if not token.get('profile_setup'):
+                raise Exception('not a profile setup token')
+            user_pk = token['user_id']
+        except Exception:
             return Response({'detail': 'Session expired. Please sign in again.'}, status=status.HTTP_400_BAD_REQUEST)
+
         user = User.objects.filter(pk=user_pk).first()
         if not user:
             return Response({'detail': 'User not found.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -342,7 +351,6 @@ class CompleteGoogleProfileView(APIView):
         user.village = village
         user.country = 'Uganda'
         user.save()
-        cache.delete(f'google_profile:{tmp}')
 
         refresh = RefreshToken.for_user(user)
         return Response({'access': str(refresh.access_token), 'refresh': str(refresh)})
