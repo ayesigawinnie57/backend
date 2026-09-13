@@ -467,3 +467,24 @@ def send_password_reset_email(name: str, email: str, reset_url: str):
       <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">If you didn't request a password reset, you can safely ignore this email.</p>
     '''
     _send({'from': FROM, 'to': email, 'subject': 'Reset your Majo Gadgets password', 'html': _wrap(body)})
+
+
+def send_password_changed_email(name: str, email: str):
+    body = f'''
+      <div style="text-align:center;margin-bottom:28px">
+        {_circle_icon(ICO_LOCK, '#ECFDF5', '#059669')}
+        <h2 style="margin:0 0 8px;font-size:22px;color:#0F172A">Password Changed</h2>
+        <p style="margin:0;font-size:14px;color:#64748B">Your account password was successfully updated</p>
+      </div>
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        Hi <strong>{name}</strong>, this is a confirmation that the password for your Majo Gadgets account has just been changed.
+      </p>
+      <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:20px;margin-bottom:28px">
+        <p style="margin:0 0 10px;font-size:12px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Security Notice</p>
+        {_info_row(ICO_CHECK, 'Your password was changed successfully', '#475569')}
+        {_info_row(ICO_LOCK,  'If you made this change, no further action is needed', '#475569')}
+        {_info_row(ICO_MAIL,  'If you did not make this change, contact us immediately', '#DC2626')}
+      </div>
+      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">If you did not change your password, please <a href="{settings.FRONTEND_URL}/forgot-password" style="color:#1E3A8A !important">reset it immediately</a>.</p>
+    '''
+    _send({'from': FROM, 'to': email, 'subject': 'Your password has been changed', 'html': _wrap(body)})

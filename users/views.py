@@ -9,7 +9,7 @@ from django.core.cache import cache
 from django.conf import settings
 from .serializers import RegisterSerializer, UserSerializer, UpdateProfileSerializer, CartItemSerializer, WishlistItemSerializer, NotificationSerializer
 from .models import CartItem, WishlistItem, Notification
-from .emails import send_welcome_email, send_password_reset_email
+from .emails import send_welcome_email, send_password_reset_email, send_password_changed_email
 
 User = get_user_model()
 
@@ -127,6 +127,11 @@ class ResetPasswordView(APIView):
         user.set_password(password)
         user.save()
         cache.delete(f'pwd_reset:{token}')
+        try:
+            send_password_changed_email(user.name, user.email)
+        except Exception:
+            pass
+        Notification.objects.create(user=user, type='system', title='Password reset successfully', body='Your account password was reset. If you did not do this, please contact us immediately.')
         return Response({'detail': 'Password reset successful.'})
 
 
@@ -143,6 +148,12 @@ class ProfileView(generics.RetrieveAPIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        if serializer.validated_data.get('new_password') or serializer.validated_data.get('password'):
+            try:
+                send_password_changed_email(request.user.name, request.user.email)
+            except Exception:
+                pass
+            Notification.objects.create(user=request.user, type='system', title='Password changed', body='Your account password was changed successfully. If you did not do this, please contact us immediately.')
         return Response(UserSerializer(request.user).data)
 
     def delete(self, request, *args, **kwargs):
