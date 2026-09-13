@@ -201,7 +201,7 @@ def send_welcome_email(name: str, email: str):
 
 
 def send_admin_new_order_email(order_code: str, customer_name: str, customer_email: str, total: str, items: list, delivery_address: str):
-    admin_url = f'{settings.FRONTEND_URL}/#/admin/orders/{order_code}'
+    admin_url = f'{settings.FRONTEND_URL}/admin/orders/{order_code}'
     body = f'''
       <div style="text-align:center;margin-bottom:24px">
         {_circle_icon(ICO_SHOPPING, '#FEF3C7', '#F59E0B')}
@@ -384,7 +384,7 @@ def send_order_delivered_email(name: str, email: str, order_code: str, total: st
       </div>
 
       <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.7">Enjoyed your experience? Please take a moment to rate your order — it helps us serve you better.</p>
-      <a href="{settings.FRONTEND_URL}/#/rate/{order_code}" style="display:inline-block;padding:14px 32px;background:#F59E0B !important;background-color:#F59E0B !important;color:#ffffff !important;border:1px solid #F59E0B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important;line-height:1.4;vertical-align:middle">Rate Your Order</a>
+      <a href="{settings.FRONTEND_URL}/rate/{order_code}" style="display:inline-block;padding:14px 32px;background:#F59E0B !important;background-color:#F59E0B !important;color:#ffffff !important;border:1px solid #F59E0B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important;line-height:1.4;vertical-align:middle">Rate Your Order</a>
       <p style="margin:28px 0 0;font-size:13px;color:#94A3B8;line-height:1.6">— The Majo Gadgets Team</p>
     '''
     _send({'from': FROM, 'to': email, 'subject': f'Order Delivered — #{order_code}', 'html': _wrap(body)})
