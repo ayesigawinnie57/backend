@@ -6,7 +6,7 @@ def _send(payload: dict):
     resend.api_key = settings.RESEND_API_KEY
     resend.Emails.send(payload)
 
-FROM = 'Majo Gadgets <noreply@educfarm.com>'
+FROM = 'Majo Gadgets <noreply@majogadgets.com>'
 LOGO = 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789111152/Majo_Gadgets_logo_an2hbc.png'
 
 # ── Icon paths ───────────────────────────────────────────────────────────────
