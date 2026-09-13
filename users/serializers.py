@@ -26,6 +26,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
+    def get_avatar(self, obj):
+        if not obj.avatar:
+            return None
+        return obj.avatar.url
+
     class Meta:
         model = User
         fields = ('id', 'email', 'name', 'phone', 'avatar', 'is_staff', 'is_superuser', 'created_at', 'country', 'region', 'district', 'village')
