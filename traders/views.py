@@ -144,7 +144,8 @@ class TraderProductListView(APIView):
             return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = TraderProductSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(trader=trader)
+        image_file = request.FILES.get('image')
+        serializer.save(trader=trader, **(({'image': image_file}) if image_file else {}))
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -177,7 +178,8 @@ class TraderProductDetailView(APIView):
             return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = TraderProductSerializer(product, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        image_file = request.FILES.get('image')
+        serializer.save(**(({'image': image_file}) if image_file else {}))
         return Response(serializer.data)
 
     def delete(self, request, trader_uuid, product_uuid):
