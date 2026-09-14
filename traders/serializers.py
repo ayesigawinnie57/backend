@@ -10,6 +10,17 @@ class TraderApplicationSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id', 'uuid', 'status', 'admin_note', 'reviewed_by', 'reviewed_by_name', 'reviewed_at', 'user', 'created_at', 'updated_at')
 
+    def validate_email(self, value):
+        # Allow re-application if existing record is rejected
+        qs = TraderApplication.objects.filter(email=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.filter(status__in=('pending', 'approved')).exists():
+            raise serializers.ValidationError('An active application with this email already exists.')
+        # Delete old rejected record so new one can be created cleanly
+        qs.filter(status='rejected').delete()
+        return value
+
 
 class TraderApplicationAdminSerializer(serializers.ModelSerializer):
     reviewed_by_name = serializers.CharField(source='reviewed_by.name', read_only=True, default=None)

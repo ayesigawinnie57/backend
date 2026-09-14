@@ -32,13 +32,21 @@ class IsTraderOwner(permissions.BasePermission):
 
 class TraderApplicationCreateView(generics.CreateAPIView):
     serializer_class = TraderApplicationSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     def create(self, request, *args, **kwargs):
+        # If user already has an application, block re-submission unless rejected
+        existing = TraderApplication.objects.filter(user=request.user).order_by('-created_at').first()
+        if not existing:
+            existing = TraderApplication.objects.filter(email=request.user.email).order_by('-created_at').first()
+        if existing and existing.status in ('pending', 'approved'):
+            return Response(
+                {'detail': f'You already have a {existing.status} application.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = request.user if request.user.is_authenticated else None
-        serializer.save(user=user)
+        serializer.save(user=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -60,12 +68,12 @@ class TraderMeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-        applicant = TraderApplication.objects.filter(email=request.user.email).order_by('-created_at').first()
+        applicant = TraderApplication.objects.filter(user=request.user).order_by('-created_at').first()
+        if not applicant:
+            # fallback: match by email for legacy applications
+            applicant = TraderApplication.objects.filter(email=request.user.email).order_by('-created_at').first()
         if not applicant:
             return Response({'detail': 'No trader application found.'}, status=status.HTTP_404_NOT_FOUND)
-
-        if applicant.status != 'approved':
-            return Response({'detail': 'Trader application is not approved yet.', 'status': applicant.status}, status=status.HTTP_403_FORBIDDEN)
 
         return Response({
             'id': applicant.id,
