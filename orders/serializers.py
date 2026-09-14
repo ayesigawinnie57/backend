@@ -30,13 +30,15 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
     has_service_rating = serializers.SerializerMethodField()
+    user_name = serializers.CharField(source='user.name', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
 
     def get_has_service_rating(self, obj):
         return hasattr(obj, 'service_rating')
 
     class Meta:
         model = Order
-        fields = ('id', 'code', 'status', 'subtotal', 'delivery_fee', 'total', 'items', 'delivery_address', 'phone', 'note', 'cancel_reason', 'has_service_rating', 'created_at', 'updated_at')
+        fields = ('id', 'code', 'status', 'subtotal', 'delivery_fee', 'total', 'items', 'delivery_address', 'phone', 'note', 'cancel_reason', 'has_service_rating', 'user_name', 'user_email', 'created_at', 'updated_at')
         read_only_fields = ('id', 'code', 'subtotal', 'delivery_fee', 'total', 'status', 'cancel_reason', 'created_at', 'updated_at')
 
     def create(self, validated_data):
