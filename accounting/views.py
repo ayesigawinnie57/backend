@@ -55,7 +55,7 @@ class AccountingDashboardView(APIView):
         # Inventory value
         products = Product.objects.all()
         inventory_cost = sum(
-            (p.purchases.order_by('-purchase_date').first().unit_cost if p.purchases.exists() else 0) * p.stock
+            float(p.purchases.order_by('-purchase_date').first().unit_cost if p.purchases.exists() else p.price * 0.6) * p.stock
             for p in products
         )
         inventory_sales_value = sum(p.price * p.stock for p in products)
