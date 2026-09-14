@@ -11,5 +11,6 @@ urlpatterns = [
     path('api/inventory/', include('inventory.urls')),
     path('api/accounting/', include('accounting.urls')),
     path('api/data/', include('orders.data_urls')),
+    path('api/traders/', include('traders.urls')),
     path('email-preview/', email_preview),
 ]

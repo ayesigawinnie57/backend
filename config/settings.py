@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'settings_app',
     'inventory',
     'accounting',
+    'traders',
 ]
 
 MIDDLEWARE = [
