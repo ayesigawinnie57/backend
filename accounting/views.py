@@ -35,9 +35,10 @@ class AccountingDashboardView(APIView):
         today = date.today()
         month_start = today.replace(day=1)
 
-        # Revenue from completed payments
-        total_revenue = Payment.objects.filter(status='completed').aggregate(t=Sum('amount'))['t'] or 0
-        today_revenue = Payment.objects.filter(status='completed', created_at__date=today).aggregate(t=Sum('amount'))['t'] or 0
+        # Revenue — delivered orders total (source of truth for a COD business)
+        delivered_orders = Order.objects.filter(status='delivered')
+        total_revenue = delivered_orders.aggregate(t=Sum('total'))['t'] or 0
+        today_revenue = delivered_orders.filter(created_at__date=today).aggregate(t=Sum('total'))['t'] or 0
 
         # COGS from purchases
         purchases = Purchase.objects.all()
@@ -74,10 +75,10 @@ class AccountingDashboardView(APIView):
 
         # Monthly revenue (last 6 months)
         monthly = (
-            Payment.objects.filter(status='completed')
+            Order.objects.filter(status='delivered')
             .annotate(month=TruncMonth('created_at'))
             .values('month')
-            .annotate(revenue=Sum('amount'), count=Count('id'))
+            .annotate(revenue=Sum('total'), count=Count('id'))
             .order_by('month')
         )
 
