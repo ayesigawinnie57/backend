@@ -33,11 +33,19 @@ class TraderApplicationAdminSerializer(serializers.ModelSerializer):
 
 class TraderProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    category_id = serializers.IntegerField(source='category.id', read_only=True, allow_null=True, default=None)
+    category_name = serializers.CharField(source='category.name', read_only=True, default=None)
 
     class Meta:
         model = TraderProduct
-        fields = ('id', 'uuid', 'name', 'description', 'price', 'stock', 'image_url', 'is_active', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'uuid', 'created_at', 'updated_at')
+        fields = (
+            'id', 'uuid', 'name', 'short_description', 'long_description', 'description',
+            'price', 'original_price', 'delivery_fee', 'stock',
+            'category_id', 'category_name',
+            'image_url', 'is_active', 'is_featured', 'is_new_deal',
+            'created_at', 'updated_at',
+        )
+        read_only_fields = ('id', 'uuid', 'image_url', 'category_id', 'category_name', 'created_at', 'updated_at')
 
     def get_image_url(self, obj):
         if obj.image:

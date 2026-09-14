@@ -69,17 +69,24 @@ class TraderApplication(models.Model):
 
 
 class TraderProduct(models.Model):
-    uuid    = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    trader  = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='products')
-    name    = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    price   = models.DecimalField(max_digits=12, decimal_places=2)
-    stock   = models.PositiveIntegerField(default=0)
-    image_url = models.URLField(blank=True)  # legacy
-    image     = cloudinary.models.CloudinaryField('image', folder='trader_products/', blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    uuid        = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    trader      = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='products')
+    name        = models.CharField(max_length=255)
+    short_description = models.CharField(max_length=300, blank=True, default='')
+    long_description  = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True)  # legacy
+    price       = models.DecimalField(max_digits=12, decimal_places=2)
+    original_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    delivery_fee   = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    stock       = models.PositiveIntegerField(default=0)
+    category    = models.ForeignKey('products.Category', on_delete=models.SET_NULL, null=True, blank=True)
+    image_url   = models.URLField(blank=True)  # legacy
+    image       = cloudinary.models.CloudinaryField('image', folder='trader_products/', blank=True, null=True)
+    is_active   = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False)
+    is_new_deal = models.BooleanField(default=False)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']

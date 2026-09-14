@@ -145,7 +145,15 @@ class TraderProductListView(APIView):
         serializer = TraderProductSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         image_file = request.FILES.get('image')
-        serializer.save(trader=trader, **(({'image': image_file}) if image_file else {}))
+        category_id = request.data.get('category_id')
+        extra = {'image': image_file} if image_file else {}
+        if category_id:
+            from products.models import Category
+            try:
+                extra['category'] = Category.objects.get(pk=category_id)
+            except Category.DoesNotExist:
+                pass
+        serializer.save(trader=trader, **extra)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -179,7 +187,15 @@ class TraderProductDetailView(APIView):
         serializer = TraderProductSerializer(product, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         image_file = request.FILES.get('image')
-        serializer.save(**(({'image': image_file}) if image_file else {}))
+        category_id = request.data.get('category_id')
+        extra = {'image': image_file} if image_file else {}
+        if category_id:
+            from products.models import Category
+            try:
+                extra['category'] = Category.objects.get(pk=category_id)
+            except Category.DoesNotExist:
+                pass
+        serializer.save(**extra)
         return Response(serializer.data)
 
     def delete(self, request, trader_uuid, product_uuid):
