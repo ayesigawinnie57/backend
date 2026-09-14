@@ -488,3 +488,28 @@ def send_password_changed_email(name: str, email: str):
       <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">If you did not change your password, please <a href="{settings.FRONTEND_URL}/forgot-password" style="color:#1E3A8A !important">reset it immediately</a>.</p>
     '''
     _send({'from': FROM, 'to': email, 'subject': 'Your password has been changed', 'html': _wrap(body)})
+
+
+def send_trader_approved_email(name: str, email: str, business_name: str, trader_uuid: str):
+    portal_url = f'{settings.FRONTEND_URL}/trader/{trader_uuid}'
+    body = f'''
+      <div style="text-align:center;margin-bottom:24px">
+        {_circle_icon(ICO_CHECK, '#DCFCE7', '#16A34A')}
+        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Congratulations, {name}!</h2>
+        <p style="margin:0;font-size:14px;color:#64748B">Your trader application has been approved</p>
+      </div>
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        We're excited to welcome <strong>{business_name}</strong> to the Majo Gadgets platform!
+        Your application has been reviewed and approved by our team.
+      </p>
+      <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:28px">
+        {_info_row(ICO_CHECK,   'List and sell your products on Majo Gadgets', '#334155')}
+        {_info_row(ICO_SHOPPING,'Track your sales and revenue in real time', '#334155')}
+        {_info_row(ICO_SETTINGS,'Manage your trader account from your portal', '#334155')}
+      </div>
+      <a href="{portal_url}" style="display:inline-block;padding:14px 32px;background:#22C55E !important;background-color:#22C55E !important;color:#ffffff !important;border:1px solid #22C55E;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important">
+        Open My Trader Portal &rarr;
+      </a>
+      <p style="margin:28px 0 0;font-size:13px;color:#94A3B8">If you have any questions, just reply to this email — we're always happy to help.</p>
+    '''
+    _send({'from': FROM, 'to': email, 'subject': f'Your Trader Application is Approved — {business_name}', 'html': _wrap(body)})

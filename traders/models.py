@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import uuid
 
 
 class TraderApplication(models.Model):
@@ -15,6 +16,8 @@ class TraderApplication(models.Model):
         ('limited_company', 'Limited Company'),
         ('other',           'Other'),
     ]
+
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     # Personal info
     full_name       = models.CharField(max_length=150)
@@ -62,3 +65,57 @@ class TraderApplication(models.Model):
 
     def __str__(self):
         return f'{self.business_name} — {self.status}'
+
+
+class TraderProduct(models.Model):
+    uuid    = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    trader  = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='products')
+    name    = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    price   = models.DecimalField(max_digits=12, decimal_places=2)
+    stock   = models.PositiveIntegerField(default=0)
+    image_url = models.URLField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.trader.business_name} — {self.name}'
+
+
+class TraderSale(models.Model):
+    uuid        = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    trader      = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='sales')
+    product     = models.ForeignKey(TraderProduct, on_delete=models.SET_NULL, null=True, blank=True, related_name='sales')
+    product_name = models.CharField(max_length=255)
+    quantity    = models.PositiveIntegerField(default=1)
+    unit_price  = models.DecimalField(max_digits=12, decimal_places=2)
+    total       = models.DecimalField(max_digits=12, decimal_places=2)
+    customer_name = models.CharField(max_length=150, blank=True)
+    note        = models.TextField(blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.trader.business_name} — {self.product_name} x{self.quantity}'
+
+
+class TraderExpense(models.Model):
+    uuid        = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    trader      = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='expenses')
+    description = models.CharField(max_length=255)
+    amount      = models.DecimalField(max_digits=12, decimal_places=2)
+    date        = models.DateField()
+    note        = models.TextField(blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f'{self.trader.business_name} — {self.description}'

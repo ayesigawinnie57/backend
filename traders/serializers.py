@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TraderApplication
+from .models import TraderApplication, TraderProduct, TraderSale, TraderExpense
 
 
 class TraderApplicationSerializer(serializers.ModelSerializer):
@@ -8,7 +8,7 @@ class TraderApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = TraderApplication
         fields = '__all__'
-        read_only_fields = ('id', 'status', 'admin_note', 'reviewed_by', 'reviewed_by_name', 'reviewed_at', 'user', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'uuid', 'status', 'admin_note', 'reviewed_by', 'reviewed_by_name', 'reviewed_at', 'user', 'created_at', 'updated_at')
 
 
 class TraderApplicationAdminSerializer(serializers.ModelSerializer):
@@ -18,3 +18,24 @@ class TraderApplicationAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = TraderApplication
         fields = '__all__'
+
+
+class TraderProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TraderProduct
+        fields = ('id', 'uuid', 'name', 'description', 'price', 'stock', 'image_url', 'is_active', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'uuid', 'created_at', 'updated_at')
+
+
+class TraderSaleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TraderSale
+        fields = ('id', 'uuid', 'product', 'product_name', 'quantity', 'unit_price', 'total', 'customer_name', 'note', 'created_at')
+        read_only_fields = ('id', 'uuid', 'created_at')
+
+
+class TraderExpenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TraderExpense
+        fields = ('id', 'uuid', 'description', 'amount', 'date', 'note', 'created_at')
+        read_only_fields = ('id', 'uuid', 'created_at')
