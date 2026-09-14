@@ -10,6 +10,7 @@ from django.conf import settings
 from .serializers import RegisterSerializer, UserSerializer, UpdateProfileSerializer, CartItemSerializer, WishlistItemSerializer, NotificationSerializer
 from .models import CartItem, WishlistItem, Notification
 from .emails import send_welcome_email, send_password_reset_email, send_password_changed_email
+from .sms import send_welcome_sms
 
 User = get_user_model()
 
@@ -86,6 +87,10 @@ class RegisterView(generics.CreateAPIView):
         refresh = RefreshToken.for_user(user)
         try:
             send_welcome_email(user.name, user.email)
+        except Exception:
+            pass
+        try:
+            send_welcome_sms(user.name, user.phone)
         except Exception:
             pass
         Notification.objects.create(user=user, type='welcome', title='Welcome to Majo Gadgets!', body='Thanks for joining! Explore our latest gadgets and enjoy exclusive deals made just for you.')
@@ -310,6 +315,10 @@ class GoogleLoginView(APIView):
             user.save()
             try:
                 send_welcome_email(user.name, user.email)
+            except Exception:
+                pass
+            try:
+                send_welcome_sms(user.name, user.phone)
             except Exception:
                 pass
             Notification.objects.create(user=user, type='welcome', title='Welcome to Majo Gadgets!', body='Thanks for joining! Explore our latest gadgets and enjoy exclusive deals made just for you.')

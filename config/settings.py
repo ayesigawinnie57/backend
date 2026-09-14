@@ -159,6 +159,10 @@ RESEND_API_KEY = config('RESEND_API_KEY', default='')
 FRONTEND_URL = config('FRONTEND_URL', default='https://www.majogadgets.com')
 ADMIN_EMAIL = config('ADMIN_EMAIL', default='ayesigawinnie57@gmail.com')
 
+# TextBee SMS
+TEXTBEE_API_KEY = config('TEXTBEE_API_KEY', default='')
+TEXTBEE_DEVICE_ID = config('TEXTBEE_DEVICE_ID', default='')
+
 # Pesapal
 PESAPAL_CONSUMER_KEY = config('PESAPAL_CONSUMER_KEY', default='')
 PESAPAL_CONSUMER_SECRET = config('PESAPAL_CONSUMER_SECRET', default='')
