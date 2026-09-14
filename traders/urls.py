@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     TraderApplicationCreateView,
-    TraderProfileView, TraderDashboardView,
+    TraderMeView, TraderProfileView, TraderDashboardView,
     TraderProductListView, TraderProductDetailView,
     TraderSaleListView, TraderExpenseListView,
     AdminTraderListView, AdminTraderDetailView,
@@ -13,6 +13,7 @@ urlpatterns = [
     path('apply/',                                                      TraderApplicationCreateView.as_view(), name='trader-apply'),
 
     # Trader portal (UUID-scoped)
+    path('me/',                                                        TraderMeView.as_view(),                name='trader-me'),
     path('<uuid:trader_uuid>/profile/',                                 TraderProfileView.as_view(),           name='trader-profile'),
     path('<uuid:trader_uuid>/dashboard/',                               TraderDashboardView.as_view(),         name='trader-dashboard'),
     path('<uuid:trader_uuid>/products/',                                TraderProductListView.as_view(),       name='trader-products'),

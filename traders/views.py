@@ -56,6 +56,27 @@ class TraderProfileView(APIView):
         return Response(TraderApplicationAdminSerializer(trader).data)
 
 
+class TraderMeView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        applicant = TraderApplication.objects.filter(email=request.user.email).order_by('-created_at').first()
+        if not applicant:
+            return Response({'detail': 'No trader application found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if applicant.status != 'approved':
+            return Response({'detail': 'Trader application is not approved yet.', 'status': applicant.status}, status=status.HTTP_403_FORBIDDEN)
+
+        return Response({
+            'id': applicant.id,
+            'uuid': str(applicant.uuid),
+            'business_name': applicant.business_name,
+            'status': applicant.status,
+            'email': applicant.email,
+            'full_name': applicant.full_name,
+        })
+
+
 # ── Trader: dashboard stats ───────────────────────────────────────────────────
 
 class TraderDashboardView(APIView):
