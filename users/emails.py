@@ -28,7 +28,7 @@ ICO_PHONE       = '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-
 def _icon(path_d: str, color: str = '#ffffff', size: int = 20) -> str:
     glyph_map = {
         ICO_CHECK: '✓',
-        ICO_PACKAGE: '▣',
+        ICO_PACKAGE: '📦',
         ICO_TRUCK: '🚚',
         ICO_STAR: '★',
         ICO_X_CIRCLE: '✕',
@@ -93,7 +93,7 @@ def _wrap(body: str) -> str:
 def _progress_bar(active: str) -> str:
     steps = [
         ('pending',    ICO_PACKAGE,  'Placed'),
-        ('processing', ICO_SETTINGS, 'Confirmed'),
+        ('processing', ICO_PACKAGE,  'Confirmed'),
         ('shipped',    ICO_TRUCK,    'Shipped'),
         ('delivered',  ICO_CHECK,    'Delivered'),
     ]
