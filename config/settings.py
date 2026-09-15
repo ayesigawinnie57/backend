@@ -172,3 +172,10 @@ PESAPAL_CONSUMER_SECRET = config('PESAPAL_CONSUMER_SECRET', default='')
 PESAPAL_BASE_URL = config('PESAPAL_BASE_URL', default='https://cybqa.pesapal.com/pesapalv3')  # sandbox default
 PESAPAL_IPN_URL = config('PESAPAL_IPN_URL', default='')
 PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='')
+
+# Celery
+CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
