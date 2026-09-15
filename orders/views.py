@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.core.cache import cache
-from django.db import transaction
+from django.db import transaction, models
 from .models import Order, ServiceRating, Payment, ReturnRequest
 from .serializers import OrderSerializer, ServiceRatingSerializer, PaymentSerializer, ReturnRequestSerializer
 from .tasks import send_product_rating_notifications
@@ -39,7 +39,17 @@ def _notify(user, ntype: str, title: str, body: str):
         pass
 
 
-PAYMENT_RATE_LIMIT = 5
+def _restore_stock(order):
+    from products.models import Product
+    from django.db import transaction
+    items = order.items.select_related('product').all()
+    for item in items:
+        if item.product:
+            Product.objects.filter(pk=item.product.pk).update(
+                stock=models.F('stock') + item.quantity
+            )
+
+
 PAYMENT_RATE_WINDOW = 60
 
 
@@ -112,8 +122,10 @@ class OrderCancelView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        order.status = 'cancelled'
-        order.save(update_fields=['status', 'updated_at'])
+        with transaction.atomic():
+            order.status = 'cancelled'
+            order.save(update_fields=['status', 'updated_at'])
+            _restore_stock(order)
         try:
             send_order_cancelled_email(order.user.name, order.user.email, order.code, 'Cancelled by customer.')
         except Exception:
@@ -249,9 +261,11 @@ class AdminOrderCancelView(APIView):
         if not reason:
             return Response({'detail': 'A cancellation reason is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        order.status = 'cancelled'
-        order.cancel_reason = reason
-        order.save(update_fields=['status', 'cancel_reason', 'updated_at'])
+        with transaction.atomic():
+            order.status = 'cancelled'
+            order.cancel_reason = reason
+            order.save(update_fields=['status', 'cancel_reason', 'updated_at'])
+            _restore_stock(order)
         try:
             send_order_cancelled_email(order.user.name, order.user.email, order.code, reason)
         except Exception:

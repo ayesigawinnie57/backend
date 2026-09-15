@@ -42,15 +42,34 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'code', 'subtotal', 'delivery_fee', 'total', 'status', 'cancel_reason', 'created_at', 'updated_at')
 
     def create(self, validated_data):
+        from django.db import transaction
+        from products.models import Product
         items_data = validated_data.pop('items')
-        # Prices always come from the DB — never trust client-supplied values
-        subtotal = sum(item['product'].price * item['quantity'] for item in items_data)
         delivery_fee = validated_data.pop('delivery_fee', 5000)
-        total = subtotal + delivery_fee
-        order = Order.objects.create(subtotal=subtotal, delivery_fee=delivery_fee, total=total, **validated_data)
-        for item in items_data:
-            item['price'] = item['product'].price
-            OrderItem.objects.create(order=order, **item)
+
+        with transaction.atomic():
+            # Lock product rows to prevent overselling
+            product_ids = [item['product'].pk for item in items_data]
+            locked = {p.pk: p for p in Product.objects.select_for_update().filter(pk__in=product_ids)}
+
+            for item in items_data:
+                product = locked[item['product'].pk]
+                if product.stock < item['quantity']:
+                    raise serializers.ValidationError(
+                        f'Not enough stock for "{product.name}". Available: {product.stock}.'
+                    )
+
+            subtotal = sum(locked[item['product'].pk].price * item['quantity'] for item in items_data)
+            total = subtotal + delivery_fee
+            order = Order.objects.create(subtotal=subtotal, delivery_fee=delivery_fee, total=total, **validated_data)
+
+            for item in items_data:
+                product = locked[item['product'].pk]
+                item['price'] = product.price
+                OrderItem.objects.create(order=order, **item)
+                product.stock -= item['quantity']
+                product.save(update_fields=['stock'])
+
         return order
 
 

@@ -2,9 +2,9 @@ import bleach
 from html import escape
 
 from django.core.cache import cache
+from django.db.models import Avg, Count, F
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.db.models import Avg, Count
 from rest_framework import generics, filters, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -120,6 +120,27 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         cache.delete(f'products:detail:{instance.pk}')
         cache.delete('products:list')
         instance.delete()
+
+
+class ProductStockAddView(APIView):
+    """POST /api/products/<pk>/stock/ — admin or the product's trader can add stock."""
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, pk):
+        product = get_object_or_404(Product, pk=pk)
+        if not request.user.is_staff:
+            trader_app = getattr(request.user, 'trader_application', None)
+            if not trader_app or product.trader_id != trader_app.id:
+                return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            qty = int(request.data.get('quantity', 0))
+        except (ValueError, TypeError):
+            return Response({'detail': 'Invalid quantity.'}, status=status.HTTP_400_BAD_REQUEST)
+        if qty <= 0:
+            return Response({'detail': 'Quantity must be positive.'}, status=status.HTTP_400_BAD_REQUEST)
+        Product.objects.filter(pk=pk).update(stock=F('stock') + qty)
+        product.refresh_from_db(fields=['stock'])
+        return Response({'id': product.pk, 'stock': product.stock})
 
 
 class ProductImageDeleteView(APIView):
