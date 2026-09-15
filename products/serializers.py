@@ -2,6 +2,21 @@ from rest_framework import serializers
 from django.utils.text import slugify
 from django.db.models import Avg, Count
 from .models import Category, Product, ProductImage, FlashSale, ProductReview, ReviewImage
+from settings_app.models import PlatformSettings
+
+
+def _apply_commission(price):
+    """Return price * (1 + commission/100) * (1 + vat/100), rounded to 2dp."""
+    try:
+        settings = PlatformSettings.get()
+        commission = float(settings.commission)
+        vat = float(settings.vat)
+        multiplier = (1 + commission / 100) * (1 + vat / 100)
+        if multiplier != 1:
+            return round(float(price) * multiplier, 2)
+    except Exception:
+        pass
+    return float(price)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -85,6 +100,9 @@ class ProductSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep['image'] = rep.get('image_url')
+        rep['price'] = str(_apply_commission(instance.price))
+        if instance.original_price:
+            rep['original_price'] = str(_apply_commission(instance.original_price))
         return rep
 
 
@@ -181,9 +199,16 @@ class FlashSaleSerializer(serializers.ModelSerializer):
 
     def get_discount_pct(self, obj):
         orig = obj.product.original_price or obj.product.price
-        if orig and orig > obj.flash_price:
-            return round((1 - float(obj.flash_price) / float(orig)) * 100)
+        commissioned_flash = _apply_commission(obj.flash_price)
+        commissioned_orig = _apply_commission(orig)
+        if commissioned_orig and commissioned_orig > commissioned_flash:
+            return round((1 - commissioned_flash / commissioned_orig) * 100)
         return 0
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['flash_price'] = str(_apply_commission(instance.flash_price))
+        return rep
 
     def validate(self, attrs):
         from django.utils import timezone

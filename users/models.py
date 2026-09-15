@@ -53,6 +53,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     village = models.CharField(max_length=150, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    assigned_pages = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = UserManager()

@@ -35,8 +35,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'name', 'phone', 'avatar', 'is_staff', 'is_superuser', 'created_at', 'country', 'region', 'district', 'village')
-        read_only_fields = ('id', 'email', 'is_staff', 'is_superuser', 'created_at')
+        fields = ('id', 'email', 'name', 'phone', 'avatar', 'is_staff', 'is_superuser', 'assigned_pages', 'created_at', 'country', 'region', 'district', 'village')
+        read_only_fields = ('id', 'email', 'is_superuser', 'created_at')
 
 
 class UpdateProfileSerializer(serializers.ModelSerializer):
@@ -48,7 +48,7 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('name', 'email', 'phone', 'avatar', 'current_password', 'new_password', 'password_confirm', 'password', 'is_staff')
+        fields = ('name', 'email', 'phone', 'avatar', 'current_password', 'new_password', 'password_confirm', 'password', 'is_staff', 'assigned_pages')
 
     def validate(self, attrs):
         current_password = attrs.get('current_password')
