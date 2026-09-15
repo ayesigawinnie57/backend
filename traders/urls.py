@@ -4,6 +4,9 @@ from .views import (
     TraderMeView, TraderProfileView, TraderDashboardView,
     TraderProductListView, TraderProductDetailView,
     TraderSaleListView, TraderExpenseListView,
+    TraderInventoryListView, TraderInventoryItemDetailView, TraderStockMovementView,
+    TraderOrderListView, TraderOrderItemUpdateView,
+    TraderAccountView,
     AdminTraderListView, AdminTraderDetailView,
     AdminTraderApproveView, AdminTraderRejectView,
 )
@@ -20,6 +23,12 @@ urlpatterns = [
     path('<uuid:trader_uuid>/products/<uuid:product_uuid>/',            TraderProductDetailView.as_view(),     name='trader-product-detail'),
     path('<uuid:trader_uuid>/sales/',                                   TraderSaleListView.as_view(),          name='trader-sales'),
     path('<uuid:trader_uuid>/expenses/',                                TraderExpenseListView.as_view(),       name='trader-expenses'),
+    path('<uuid:trader_uuid>/inventory/',                               TraderInventoryListView.as_view(),     name='trader-inventory'),
+    path('<uuid:trader_uuid>/inventory/<int:pk>/',                      TraderInventoryItemDetailView.as_view(), name='trader-inventory-item'),
+    path('<uuid:trader_uuid>/inventory/<int:pk>/movements/',            TraderStockMovementView.as_view(),     name='trader-stock-movement'),
+    path('<uuid:trader_uuid>/account/',                                 TraderAccountView.as_view(),           name='trader-account'),
+    path('<uuid:trader_uuid>/orders/',                                  TraderOrderListView.as_view(),         name='trader-orders'),
+    path('<uuid:trader_uuid>/orders/<int:pk>/',                         TraderOrderItemUpdateView.as_view(),   name='trader-order-item-update'),
 
     # Admin
     path('admin/',                                                      AdminTraderListView.as_view(),         name='admin-trader-list'),

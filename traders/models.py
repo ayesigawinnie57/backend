@@ -40,6 +40,12 @@ class TraderApplication(models.Model):
     monthly_volume     = models.CharField(max_length=100, blank=True, help_text='Expected monthly sales volume')
     experience         = models.TextField(blank=True, help_text='Trading/business experience')
 
+    # Business profile extras
+    logo         = cloudinary.models.CloudinaryField('image', folder='trader_logos/', blank=True, null=True)
+    bio          = models.TextField(blank=True, help_text='Short business description shown on store')
+    is_visible   = models.BooleanField(default=True, help_text='If False, all trader products are hidden from store')
+    is_closed    = models.BooleanField(default=False, help_text='Trader has closed their shop (soft close)')
+
     # Agreement
     agreed_to_terms = models.BooleanField(default=False)
 
@@ -128,3 +134,64 @@ class TraderExpense(models.Model):
 
     def __str__(self):
         return f'{self.trader.business_name} — {self.description}'
+
+
+class TraderInventoryItem(models.Model):
+    """A product tracked in the trader's inventory."""
+    trader      = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='inventory_items')
+    product     = models.ForeignKey(TraderProduct, on_delete=models.CASCADE, related_name='inventory_items')
+    quantity    = models.IntegerField(default=0)
+    cost_price  = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    location    = models.CharField(max_length=255, blank=True)
+    note        = models.TextField(blank=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('trader', 'product')
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f'{self.trader.business_name} — {self.product.name} ({self.quantity})'
+
+
+class TraderStockMovement(models.Model):
+    TYPES = [
+        ('in',     'Stock In'),
+        ('out',    'Stock Out'),
+        ('adjust', 'Adjustment'),
+        ('return', 'Return'),
+    ]
+    trader      = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='stock_movements')
+    item        = models.ForeignKey(TraderInventoryItem, on_delete=models.CASCADE, related_name='movements')
+    type        = models.CharField(max_length=10, choices=TYPES)
+    quantity    = models.IntegerField()   # positive = in, negative = out
+    note        = models.TextField(blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.get_type_display()} {self.quantity} × {self.item.product.name}'
+
+
+class TraderOrderItem(models.Model):
+    """Tracks a trader's preparation status for each order item that belongs to their products."""
+    STATUS_CHOICES = [
+        ('pending',   'Pending'),
+        ('preparing', 'Preparing'),
+        ('ready',     'Ready'),
+    ]
+    trader     = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='order_items')
+    order_item = models.ForeignKey('orders.OrderItem', on_delete=models.CASCADE, related_name='trader_status')
+    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    note       = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('trader', 'order_item')
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f'{self.trader.business_name} — item {self.order_item_id} [{self.status}]'

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TraderApplication, TraderProduct, TraderSale, TraderExpense
+from .models import TraderApplication, TraderProduct, TraderSale, TraderExpense, TraderOrderItem, TraderInventoryItem, TraderStockMovement
 
 
 class TraderApplicationSerializer(serializers.ModelSerializer):
@@ -25,10 +25,16 @@ class TraderApplicationSerializer(serializers.ModelSerializer):
 class TraderApplicationAdminSerializer(serializers.ModelSerializer):
     reviewed_by_name = serializers.CharField(source='reviewed_by.name', read_only=True, default=None)
     user_email = serializers.CharField(source='user.email', read_only=True, default=None)
+    logo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = TraderApplication
         fields = '__all__'
+
+    def get_logo_url(self, obj):
+        if obj.logo:
+            return obj.logo.url
+        return None
 
 
 class TraderProductSerializer(serializers.ModelSerializer):
@@ -65,3 +71,64 @@ class TraderExpenseSerializer(serializers.ModelSerializer):
         model = TraderExpense
         fields = ('id', 'uuid', 'description', 'amount', 'date', 'note', 'created_at')
         read_only_fields = ('id', 'uuid', 'created_at')
+
+
+class TraderInventoryItemSerializer(serializers.ModelSerializer):
+    product_name  = serializers.CharField(source='product.name', read_only=True)
+    product_image = serializers.SerializerMethodField()
+    product_price = serializers.DecimalField(source='product.price', max_digits=12, decimal_places=2, read_only=True)
+    product_stock = serializers.IntegerField(source='product.stock', read_only=True)
+    product_uuid  = serializers.CharField(source='product.uuid', read_only=True)
+
+    class Meta:
+        model = TraderInventoryItem
+        fields = ('id', 'product', 'product_uuid', 'product_name', 'product_image', 'product_price',
+                  'product_stock', 'quantity', 'cost_price', 'location', 'note', 'updated_at', 'created_at')
+        read_only_fields = ('id', 'product_uuid', 'product_name', 'product_image', 'product_price',
+                            'product_stock', 'updated_at', 'created_at')
+
+    def get_product_image(self, obj):
+        try:
+            return obj.product.image.url
+        except Exception:
+            return obj.product.image_url or None
+
+
+class TraderStockMovementSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='item.product.name', read_only=True)
+
+    class Meta:
+        model = TraderStockMovement
+        fields = ('id', 'item', 'product_name', 'type', 'quantity', 'note', 'created_at')
+        read_only_fields = ('id', 'product_name', 'created_at')
+
+
+class TraderOrderItemSerializer(serializers.ModelSerializer):
+    order_code        = serializers.CharField(source='order_item.order.code', read_only=True)
+    order_id          = serializers.IntegerField(source='order_item.order.id', read_only=True)
+    order_status      = serializers.CharField(source='order_item.order.status', read_only=True)
+    order_created_at  = serializers.DateTimeField(source='order_item.order.created_at', read_only=True)
+    delivery_address  = serializers.CharField(source='order_item.order.delivery_address', read_only=True)
+    product_name      = serializers.CharField(source='order_item.product.name', read_only=True)
+    product_image     = serializers.SerializerMethodField()
+    quantity          = serializers.IntegerField(source='order_item.quantity', read_only=True)
+    price             = serializers.DecimalField(source='order_item.price', max_digits=10, decimal_places=2, read_only=True)
+    order_item_id     = serializers.IntegerField(source='order_item.id', read_only=True)
+
+    class Meta:
+        model = TraderOrderItem
+        fields = (
+            'id', 'order_item_id', 'order_code', 'order_id', 'order_status',
+            'order_created_at', 'delivery_address',
+            'product_name', 'product_image', 'quantity', 'price',
+            'status', 'note', 'updated_at',
+        )
+        read_only_fields = ('id', 'order_item_id', 'order_code', 'order_id', 'order_status',
+                            'order_created_at', 'delivery_address',
+                            'product_name', 'product_image', 'quantity', 'price', 'updated_at')
+
+    def get_product_image(self, obj):
+        try:
+            return obj.order_item.product.image.url
+        except Exception:
+            return None

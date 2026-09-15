@@ -2,10 +2,11 @@ from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils import timezone
-from .models import TraderApplication, TraderProduct, TraderSale, TraderExpense
+from .models import TraderApplication, TraderProduct, TraderSale, TraderExpense, TraderOrderItem, TraderInventoryItem, TraderStockMovement
 from .serializers import (
     TraderApplicationSerializer, TraderApplicationAdminSerializer,
     TraderProductSerializer, TraderSaleSerializer, TraderExpenseSerializer,
+    TraderOrderItemSerializer, TraderInventoryItemSerializer, TraderStockMovementSerializer,
 )
 
 
@@ -349,3 +350,239 @@ class AdminTraderRejectView(APIView):
         app.reviewed_at = timezone.now()
         app.save()
         return Response(TraderApplicationAdminSerializer(app).data)
+
+
+# ── Trader: account management ───────────────────────────────────────────────
+
+# ── Trader: inventory ────────────────────────────────────────────────────────
+
+class TraderInventoryListView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, trader_uuid):
+        trader = _get_trader_by_uuid(trader_uuid)
+        if not trader or (trader.email != request.user.email and not request.user.is_staff):
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        items = TraderInventoryItem.objects.filter(trader=trader).select_related('product')
+        return Response(TraderInventoryItemSerializer(items, many=True).data)
+
+    def post(self, request, trader_uuid):
+        trader = _get_trader_by_uuid(trader_uuid)
+        if not trader or (trader.email != request.user.email and not request.user.is_staff):
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        product_id = request.data.get('product')
+        try:
+            product = TraderProduct.objects.get(pk=product_id, trader=trader)
+        except TraderProduct.DoesNotExist:
+            return Response({'detail': 'Product not found.'}, status=status.HTTP_400_BAD_REQUEST)
+        item, created = TraderInventoryItem.objects.get_or_create(
+            trader=trader, product=product,
+            defaults={
+                'quantity': int(request.data.get('quantity', 0)),
+                'cost_price': request.data.get('cost_price', 0),
+                'location': request.data.get('location', ''),
+                'note': request.data.get('note', ''),
+            }
+        )
+        if not created:
+            return Response({'detail': 'Product already in inventory.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(TraderInventoryItemSerializer(item).data, status=status.HTTP_201_CREATED)
+
+
+class TraderInventoryItemDetailView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def _get(self, trader_uuid, pk, user):
+        trader = _get_trader_by_uuid(trader_uuid)
+        if not trader or (trader.email != user.email and not user.is_staff):
+            return None, None
+        try:
+            return trader, TraderInventoryItem.objects.select_related('product').get(pk=pk, trader=trader)
+        except TraderInventoryItem.DoesNotExist:
+            return trader, None
+
+    def patch(self, request, trader_uuid, pk):
+        trader, item = self._get(trader_uuid, pk, request.user)
+        if not item:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        for field in ('cost_price', 'location', 'note'):
+            if field in request.data:
+                setattr(item, field, request.data[field])
+        item.save()
+        return Response(TraderInventoryItemSerializer(item).data)
+
+    def delete(self, request, trader_uuid, pk):
+        trader, item = self._get(trader_uuid, pk, request.user)
+        if not item:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TraderStockMovementView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, trader_uuid, pk):
+        trader = _get_trader_by_uuid(trader_uuid)
+        if not trader or (trader.email != request.user.email and not request.user.is_staff):
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            item = TraderInventoryItem.objects.select_related('product').get(pk=pk, trader=trader)
+        except TraderInventoryItem.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        mv_type = request.data.get('type')
+        if mv_type not in ('in', 'out', 'adjust', 'return'):
+            return Response({'detail': 'Invalid type.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            qty = int(request.data.get('quantity', 0))
+        except (ValueError, TypeError):
+            return Response({'detail': 'Invalid quantity.'}, status=status.HTTP_400_BAD_REQUEST)
+        signed_qty = qty if mv_type in ('in', 'return') else (-abs(qty) if mv_type == 'out' else qty)
+        TraderStockMovement.objects.create(
+            trader=trader, item=item, type=mv_type,
+            quantity=signed_qty, note=request.data.get('note', '')
+        )
+        item.quantity = max(0, item.quantity + signed_qty)
+        item.save(update_fields=['quantity', 'updated_at'])
+        item.product.stock = max(0, item.product.stock + signed_qty)
+        item.product.save(update_fields=['stock'])
+        return Response(TraderInventoryItemSerializer(item).data)
+
+
+class TraderAccountView(APIView):
+    """
+    GET  /api/traders/<uuid>/account/  — full profile
+    PATCH /api/traders/<uuid>/account/ — update business_name, bio, logo, is_visible
+    DELETE /api/traders/<uuid>/account/ — delete shop permanently
+    """
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def _trader(self, trader_uuid, user):
+        trader = _get_trader_by_uuid(trader_uuid)
+        if not trader:
+            return None
+        if trader.email != user.email and not user.is_staff:
+            return None
+        return trader
+
+    def get(self, request, trader_uuid):
+        trader = self._trader(trader_uuid, request.user)
+        if not trader:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(TraderApplicationAdminSerializer(trader).data)
+
+    def patch(self, request, trader_uuid):
+        trader = self._trader(trader_uuid, request.user)
+        if not trader:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        allowed = ('business_name', 'bio', 'phone', 'location', 'district', 'website', 'is_visible', 'is_closed')
+        for field in allowed:
+            if field in request.data:
+                val = request.data[field]
+                if field in ('is_visible', 'is_closed'):
+                    val = str(val).lower() in ('true', '1', 'yes')
+                setattr(trader, field, val)
+
+        logo_file = request.FILES.get('logo')
+        if logo_file:
+            trader.logo = logo_file
+
+        trader.save()
+
+        # Sync product visibility when is_visible changes
+        if 'is_visible' in request.data:
+            from products.models import Product
+            Product.objects.filter(trader=trader).update(is_active=trader.is_visible)
+
+        return Response(TraderApplicationAdminSerializer(trader).data)
+
+    def delete(self, request, trader_uuid):
+        trader = self._trader(trader_uuid, request.user)
+        if not trader:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        confirm = request.data.get('confirm', '')
+        if confirm != 'DELETE':
+            return Response({'detail': 'Send confirm=DELETE to permanently delete your shop.'}, status=status.HTTP_400_BAD_REQUEST)
+        # Hide all products first
+        from products.models import Product
+        Product.objects.filter(trader=trader).update(is_active=False)
+        trader.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Trader: orders ────────────────────────────────────────────────────────────
+
+class TraderOrderListView(APIView):
+    """
+    GET  /api/traders/<uuid>/orders/
+    Returns all TraderOrderItem records for this trader, auto-creating them
+    for any new order items that belong to their products.
+    """
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, trader_uuid):
+        trader = _get_trader_by_uuid(trader_uuid)
+        if not trader:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if trader.email != request.user.email and not request.user.is_staff:
+            return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Find all order items whose product belongs to this trader's store products
+        from orders.models import OrderItem
+        from products.models import Product
+        trader_product_ids = Product.objects.filter(trader=trader).values_list('id', flat=True)
+        order_items = OrderItem.objects.filter(
+            product_id__in=trader_product_ids,
+            order__status__in=['pending', 'processing', 'shipped', 'delivered'],
+        ).select_related('order', 'product')
+
+        # Auto-create TraderOrderItem records for any that don't exist yet
+        existing_ids = set(TraderOrderItem.objects.filter(trader=trader).values_list('order_item_id', flat=True))
+        new_records = [
+            TraderOrderItem(trader=trader, order_item=oi)
+            for oi in order_items if oi.id not in existing_ids
+        ]
+        if new_records:
+            TraderOrderItem.objects.bulk_create(new_records, ignore_conflicts=True)
+
+        qs = TraderOrderItem.objects.filter(trader=trader).select_related(
+            'order_item__order', 'order_item__product'
+        ).order_by('-order_item__order__created_at')
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        return Response(TraderOrderItemSerializer(qs, many=True).data)
+
+
+class TraderOrderItemUpdateView(APIView):
+    """
+    PATCH /api/traders/<uuid>/orders/<id>/
+    Trader updates their preparation status: pending → preparing → ready
+    """
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def patch(self, request, trader_uuid, pk):
+        trader = _get_trader_by_uuid(trader_uuid)
+        if not trader:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if trader.email != request.user.email and not request.user.is_staff:
+            return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            item = TraderOrderItem.objects.select_related(
+                'order_item__order', 'order_item__product'
+            ).get(pk=pk, trader=trader)
+        except TraderOrderItem.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        new_status = request.data.get('status')
+        if new_status not in ('pending', 'preparing', 'ready'):
+            return Response({'detail': 'Invalid status.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        item.status = new_status
+        item.note = request.data.get('note', item.note)
+        item.save(update_fields=['status', 'note', 'updated_at'])
+        return Response(TraderOrderItemSerializer(item).data)
