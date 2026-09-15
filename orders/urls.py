@@ -13,6 +13,16 @@ from .data_views import (
 )
 
 urlpatterns = [
+    # ── Data management (must be before <str:code>/ catch-alls) ──────────────
+    path('export/products/', ExportProductsView.as_view(), name='export-products'),
+    path('export/orders/', ExportOrdersView.as_view(), name='export-orders'),
+    path('export/users/', ExportUsersView.as_view(), name='export-users'),
+    path('import/products/', ImportProductsView.as_view(), name='import-products'),
+    path('import/categories/', ImportCategoriesView.as_view(), name='import-categories'),
+    path('danger/clear-orders/', ClearAllOrdersView.as_view(), name='clear-orders'),
+    path('danger/reset-inventory/', ResetInventoryView.as_view(), name='reset-inventory'),
+
+    # ── Orders ────────────────────────────────────────────────────────────────
     path('', OrderListCreateView.as_view(), name='order-list'),
     path('returns/', ReturnRequestListView.as_view(), name='return-list'),
     path('admin/', AdminOrderListView.as_view(), name='admin-order-list'),
@@ -28,12 +38,4 @@ urlpatterns = [
     path('<str:code>/pay/', InitiatePaymentView.as_view(), name='order-pay'),
     path('<str:code>/rate/', ServiceRatingView.as_view(), name='order-rate'),
     path('<str:code>/return/', ReturnRequestView.as_view(), name='order-return'),
-    # Data management
-    path('data/export/products/', ExportProductsView.as_view(), name='export-products'),
-    path('data/export/orders/', ExportOrdersView.as_view(), name='export-orders'),
-    path('data/export/users/', ExportUsersView.as_view(), name='export-users'),
-    path('data/import/products/', ImportProductsView.as_view(), name='import-products'),
-    path('data/import/categories/', ImportCategoriesView.as_view(), name='import-categories'),
-    path('data/danger/clear-orders/', ClearAllOrdersView.as_view(), name='clear-orders'),
-    path('data/danger/reset-inventory/', ResetInventoryView.as_view(), name='reset-inventory'),
 ]
