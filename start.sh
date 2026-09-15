@@ -26,5 +26,9 @@ python manage.py seed_districts
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
+echo "Clearing Python cache..."
+find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+find . -name '*.pyc' -delete 2>/dev/null || true
+
 echo "Starting gunicorn..."
 exec gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
