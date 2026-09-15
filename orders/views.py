@@ -62,6 +62,30 @@ class OrderListCreateView(generics.ListCreateAPIView):
             logger.exception('Failed to send admin new order email for order %s', order.code)
         _notify(order.user, 'order', f'Order #{order.code} Placed', f'Your order has been placed and is being reviewed. Total: UGX {order.total:,.0f}.')
 
+        # Notify all admin users
+        from users.models import User as UserModel
+        admin_users = UserModel.objects.filter(is_staff=True)
+        item_summary = ', '.join(f'{i["qty"]}x {i["name"]}' for i in items)
+        for admin in admin_users:
+            _notify(admin, 'order', f'New Order #{order.code}',
+                    f'{order.user.name} placed an order. Items: {item_summary}. Total: UGX {order.total:,.0f}.')
+
+        # Notify traders whose products were ordered — no customer details exposed
+        order_items = order.items.select_related('product__trader__user').all()
+        notified_traders: dict = {}
+        for item in order_items:
+            trader_app = getattr(item.product, 'trader', None)
+            if not trader_app or not trader_app.user:
+                continue
+            tid = trader_app.id
+            if tid not in notified_traders:
+                notified_traders[tid] = {'user': trader_app.user, 'lines': []}
+            notified_traders[tid]['lines'].append(f'{item.product.name} x{item.quantity}')
+        for entry in notified_traders.values():
+            product_list = ', '.join(entry['lines'])
+            _notify(entry['user'], 'order', 'New Order for Your Product!',
+                    f'A customer placed an order for: {product_list}. Order #{order.code}.')
+
 
 class OrderDetailView(generics.RetrieveAPIView):
     serializer_class = OrderSerializer

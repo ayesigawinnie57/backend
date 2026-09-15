@@ -32,6 +32,10 @@ class Product(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=1, default=0)
     stock = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    trader = models.ForeignKey(
+        'traders.TraderApplication', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='store_products'
+    )
     is_featured = models.BooleanField(default=False)
     is_new_deal = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
