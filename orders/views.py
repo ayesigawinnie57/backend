@@ -17,6 +17,7 @@ from users.emails import (
     send_order_delivered_email,
     send_order_cancelled_email,
     send_order_rating_email,
+    send_product_rating_email,
 )
 import requests as http_requests
 import logging
@@ -316,10 +317,32 @@ class AdminOrderDeliverView(APIView):
                 order.code,
                 f'{settings.FRONTEND_URL}/rate/{order.code}',
             )
+            # Product rating email — one email listing all items with individual rate buttons
+            product_items = [{
+                'name': i.product.name,
+                'image': _product_image(i.product),
+                'slug': i.product.slug,
+            } for i in order.items.select_related('product').all() if i.product]
+            if product_items:
+                send_product_rating_email(
+                    order.user.name,
+                    order.user.email,
+                    order.code,
+                    product_items,
+                )
         except Exception:
             logger.exception('Failed to send order delivered email for order %s', code)
         _notify(order.user, 'order', f'Order #{order.code} Delivered', 'Your order has been delivered! Enjoy your new gadget. ❤️')
         _notify(order.user, 'service_rating', f'Rate Your Experience — #{order.code}', f'How was your Majo Gadgets experience? Tap to rate your order.|{order.code}')
+        # One product_rating notification per item
+        for item in order.items.select_related('product').all():
+            if item.product and item.product.slug:
+                _notify(
+                    order.user,
+                    'product_rating',
+                    f'Rate {item.product.name}',
+                    f'You received {item.product.name}. How would you rate it?|{item.product.slug}',
+                )
         return Response(OrderSerializer(order).data)
 
 

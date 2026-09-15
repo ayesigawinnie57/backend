@@ -391,6 +391,47 @@ def send_order_delivered_email(name: str, email: str, order_code: str, total: st
     _send({'from': FROM, 'to': email, 'subject': f'Order Delivered — #{order_code}', 'html': _wrap(body)})
 
 
+def send_product_rating_email(name: str, email: str, order_code: str, items: list):
+    """
+    items: list of dicts with keys: name, image, slug
+    """
+    item_blocks = ''
+    for item in items:
+        img_html = (
+            f'<img src="{item["image"]}" width="56" height="56" alt="" style="border-radius:8px;object-fit:cover;display:block" />'
+            if item.get('image') else
+            f'<div style="width:56px;height:56px;background:#F1F5F9;border-radius:8px;text-align:center;line-height:56px">{_icon(ICO_PACKAGE, "#CBD5E1", 24)}</div>'
+        )
+        rate_url = f'{settings.FRONTEND_URL}/rate-product/{item["slug"]}?order_code={order_code}'
+        item_blocks += f'''
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #F1F5F9;vertical-align:middle;width:68px">{img_html}</td>
+          <td style="padding:12px 12px;border-bottom:1px solid #F1F5F9;vertical-align:middle">
+            <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#0F172A">{item["name"]}</p>
+            <a href="{rate_url}" style="display:inline-block;padding:6px 16px;background:#F59E0B !important;background-color:#F59E0B !important;color:#ffffff !important;border-radius:6px;font-weight:700;font-size:12px;text-decoration:none !important">Rate Product ★</a>
+          </td>
+        </tr>'''
+
+    body = f'''
+      <div style="text-align:center;margin-bottom:24px">
+        {_circle_icon(ICO_STAR, '#FEF3C7', '#F59E0B')}
+        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">How were your products?</h2>
+        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>, your order <strong>#{order_code}</strong> has been delivered!</p>
+      </div>
+      <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.7">
+        We'd love to know what you think about the products you received. Your review helps other customers make better choices.
+      </p>
+      <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:28px">
+        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Your Items</p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          {item_blocks}
+        </table>
+      </div>
+      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">Thank you for shopping with Majo Gadgets! ❤️</p>
+    '''
+    _send({'from': FROM, 'to': email, 'subject': f'Rate your products from order #{order_code}', 'html': _wrap(body)})
+
+
 def send_order_rating_email(name: str, email: str, order_code: str, rating_url: str):
     body = f'''
       <div style="text-align:center;margin-bottom:24px">
