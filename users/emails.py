@@ -531,6 +531,65 @@ def send_password_changed_email(name: str, email: str):
     _send({'from': FROM, 'to': email, 'subject': 'Your password has been changed', 'html': _wrap(body)})
 
 
+def send_payment_successful_email(name: str, email: str, order_code: str, total: str, items: list, payment_method: str = ''):
+    method_line = f'<p style="margin:0 0 12px;font-size:13px;color:#334155"><strong>Payment method:</strong> {payment_method}</p>' if payment_method else ''
+    body = f'''
+      <div style="text-align:center;margin-bottom:24px">
+        {_circle_icon(ICO_CHECK, '#DCFCE7', '#16A34A')}
+        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Payment Received! 🎉</h2>
+        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>, your payment was successful.</p>
+      </div>
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        We've received your payment for order <strong>#{order_code}</strong>. Your order is now confirmed and being prepared.
+      </p>
+      {_progress_bar('processing')}
+      <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0F172A;letter-spacing:1.5px">{order_code}</p>
+        {method_line}
+        <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
+        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Items</p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          {_item_rows(items)}
+          <tr>
+            <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#0F172A">Total Paid</td>
+            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#16A34A;text-align:right">UGX {total}</td>
+          </tr>
+        </table>
+      </div>
+      <a href="{settings.FRONTEND_URL}/orders/{order_code}" style="display:inline-block;padding:14px 32px;background:#1E3A8A !important;background-color:#1E3A8A !important;color:#ffffff !important;border:1px solid #1E3A8A;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important">
+        Track Your Order &rarr;
+      </a>
+      <p style="margin:28px 0 0;font-size:13px;color:#94A3B8">Thank you for shopping with Majo Gadgets! ❤️</p>
+    '''
+    _send({'from': FROM, 'to': email, 'subject': f'Payment Confirmed — Order #{order_code}', 'html': _wrap(body)})
+
+
+def send_payment_failed_email(name: str, email: str, order_code: str, total: str, reason: str = 'failed'):
+    body = f'''
+      <div style="text-align:center;margin-bottom:24px">
+        {_circle_icon(ICO_X_CIRCLE, '#FEF2F2', '#DC2626')}
+        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Payment Unsuccessful</h2>
+        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>, your payment for order <strong>#{order_code}</strong> did not go through.</p>
+      </div>
+      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:16px 20px;margin-bottom:24px">
+        <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Reason</p>
+        <p style="margin:0;font-size:14px;color:#DC2626;font-weight:600">Payment {reason}</p>
+      </div>
+      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
+        Your order has been cancelled. No money has been deducted from your account.
+      </p>
+      <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7">
+        You can place a new order and try again. If you keep experiencing issues, please contact us.
+      </p>
+      <a href="{settings.FRONTEND_URL}/shop" style="display:inline-block;padding:14px 32px;background:#F59E0B !important;background-color:#F59E0B !important;color:#ffffff !important;border:1px solid #F59E0B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important">
+        Shop Again &rarr;
+      </a>
+      <p style="margin:28px 0 0;font-size:13px;color:#94A3B8">Need help? Reply to this email and we'll sort it out.</p>
+    '''
+    _send({'from': FROM, 'to': email, 'subject': f'Payment Failed — Order #{order_code}', 'html': _wrap(body)})
+
+
 def send_trader_approved_email(name: str, email: str, business_name: str, trader_uuid: str):
     portal_url = f'{settings.FRONTEND_URL}/trader/{trader_uuid}'
     body = f'''

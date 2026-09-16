@@ -18,6 +18,8 @@ from users.emails import (
     send_order_delivered_email,
     send_order_cancelled_email,
     send_order_rating_email,
+    send_payment_successful_email,
+    send_payment_failed_email,
 )
 import requests as http_requests
 import logging
@@ -531,14 +533,30 @@ class PesapalIPNView(APIView):
                                 )
                         order.status = 'processing'
                         order.save(update_fields=['status', 'updated_at'])
-                        _notify(order.user, 'order', f'Order #{order.code} Confirmed',
-                                'Payment received! Your order is being prepared.')
+                        _notify(order.user, 'order', f'Payment Confirmed — Order #{order.code}',
+                                f'Payment received! UGX {order.total:,.0f}. Your order is being prepared.')
+                        try:
+                            items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': _product_image(i.product)} for i in order.items.select_related('product').all()]
+                            send_payment_successful_email(
+                                order.user.name, order.user.email, order.code,
+                                f'{order.total:,.0f}', items,
+                                data.get('payment_method', ''),
+                            )
+                        except Exception:
+                            logger.exception('Failed to send payment success email for order %s', order.code)
                     elif mapped in ('failed', 'invalid', 'cancelled') and order.status == 'pending':
                         order.status = 'cancelled'
                         order.cancel_reason = f'Payment {mapped}.'
                         order.save(update_fields=['status', 'cancel_reason', 'updated_at'])
-                        _notify(order.user, 'order', f'Order #{order.code} Cancelled',
-                                f'Your order was cancelled because payment {mapped}.')
+                        _notify(order.user, 'order', f'Payment {mapped.title()} — Order #{order.code}',
+                                f'Your payment {mapped}. Order #{order.code} has been cancelled. No money was deducted.')
+                        try:
+                            send_payment_failed_email(
+                                order.user.name, order.user.email, order.code,
+                                f'{order.total:,.0f}', mapped,
+                            )
+                        except Exception:
+                            logger.exception('Failed to send payment failed email for order %s', order.code)
 
             logger.info('IPN processed: tracking=%s status=%s', tracking_id, mapped)
             return Response({'orderNotificationType': 'IPNCHANGE', 'orderTrackingId': tracking_id, 'orderMerchantReference': merchant_ref, 'status': 200})
