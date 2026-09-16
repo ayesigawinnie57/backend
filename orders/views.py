@@ -375,28 +375,17 @@ class InitiatePaymentView(APIView):
         cache.set(rate_key, attempts + 1, PAYMENT_RATE_WINDOW)
 
         # Lock the order row to prevent duplicate concurrent payment sessions
-        with transaction.atomic():
-            try:
+        try:
+            with transaction.atomic():
                 order = Order.objects.select_for_update().select_related('payment').get(code=code, user=request.user)
-            except Order.DoesNotExist:
-                return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Prevent re-paying a completed order
-            if hasattr(order, 'payment') and order.payment.status == 'completed':
-                return Response({'detail': 'Order already paid.'}, status=status.HTTP_400_BAD_REQUEST)
+                if hasattr(order, 'payment') and order.payment.status == 'completed':
+                    return Response({'detail': 'Order already paid.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Only allow payment for pending/processing orders
-            if order.status not in ('pending', 'processing'):
-                return Response({'detail': 'This order cannot be paid.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Mark that a payment session is being created so concurrent requests are blocked
-            # We create the Payment record with status=pending BEFORE calling Pesapal
-            # so a second concurrent request hits the unique constraint and fails cleanly
-            existing_payment = getattr(order, 'payment', None)
-            if existing_payment and existing_payment.status == 'pending':
-                # Already has a pending session — reuse the existing redirect rather than creating a duplicate
-                logger.info('Reusing existing pending payment session for order=%s user=%s', order.code, request.user.email)
-                # Fall through to call Pesapal again to get a fresh redirect_url for this session
+                if order.status not in ('pending', 'processing'):
+                    return Response({'detail': 'This order cannot be paid.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             token = _pesapal_token()
