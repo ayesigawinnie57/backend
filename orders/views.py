@@ -374,6 +374,13 @@ class InitiatePaymentView(APIView):
 
     @method_decorator(never_cache)
     def post(self, request, code):
+        try:
+            return self._handle(request, code)
+        except Exception as e:
+            logger.exception('Unhandled error in InitiatePaymentView for order %s', code)
+            return Response({'detail': f'Server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _handle(self, request, code):
         # Rate limit: max 5 payment attempts per user per minute
         rate_key = f'pay_attempt_{request.user.id}'
         attempts = cache.get(rate_key, 0)
