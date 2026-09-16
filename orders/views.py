@@ -354,7 +354,22 @@ def _pesapal_token():
 
 
 def _register_ipn(token):
-    """Register IPN URL with Pesapal (idempotent — returns existing if already registered)."""
+    """Get existing IPN ID or register new one."""
+    # First try to get existing registered IPNs
+    resp = http_requests.get(
+        f"{settings.PESAPAL_BASE_URL}/api/URLSetup/GetIpnList",
+        headers={'Accept': 'application/json', 'Authorization': f'Bearer {token}'},
+        timeout=15,
+    )
+    if resp.ok:
+        ipn_list = resp.json()
+        if isinstance(ipn_list, list):
+            for ipn in ipn_list:
+                if ipn.get('url') == settings.PESAPAL_IPN_URL:
+                    logger.info('Reusing existing IPN id=%s', ipn.get('ipn_id'))
+                    return ipn['ipn_id']
+
+    # Not found — register fresh
     resp = http_requests.post(
         f"{settings.PESAPAL_BASE_URL}/api/URLSetup/RegisterIPN",
         json={'url': settings.PESAPAL_IPN_URL, 'ipn_notification_type': 'GET'},
