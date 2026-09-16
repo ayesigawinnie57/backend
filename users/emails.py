@@ -8,6 +8,7 @@ def _send(payload: dict):
 
 FROM = 'Majo Gadgets <noreply@majogadgets.com>'
 LOGO = 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789111152/Majo_Gadgets_logo_an2hbc.png'
+IMG_CART = 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789551363/shopping_cart.png'
 
 # ── Icon paths ───────────────────────────────────────────────────────────────
 ICO_CHECK       = '<polyline points="20 6 9 17 4 12"/>'
@@ -75,8 +76,8 @@ BASE = '''
         <tr><td style="padding:0 40px"><hr style="border:none;border-top:1px solid #E2E8F0;margin:0" /></td></tr>
         <tr>
           <td style="padding:20px 40px;text-align:center">
-            <p style="margin:0 0 4px;font-size:13px;color:#64748B">Majo Gadgets &mdash; Quality gadgets, great value.</p>
-            <p style="margin:0;font-size:11px;color:#94A3B8">&copy; 2025 Majo Gadgets. All rights reserved.</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#111111">Majo Gadgets &mdash; Quality gadgets, great value.</p>
+            <p style="margin:0;font-size:11px;color:#333333">&copy; 2025 Majo Gadgets. All rights reserved.</p>
           </td>
         </tr>
       </table>
@@ -111,7 +112,7 @@ def _progress_bar(active: str) -> str:
         done = idx <= active_idx
         is_active = idx == active_idx
         opacity = '1' if done else '0.35'
-        label_color = '#F59E0B' if is_active or done else '#94A3B8'
+        label_color = '#111111' if is_active or done else '#888888'
         label_weight = '700' if is_active or done else '400'
 
         img_tag = f'<img src="{img_url}" width="40" height="40" alt="{label}" style="display:block;opacity:{opacity}" />'
@@ -141,8 +142,8 @@ def _progress_bar(active: str) -> str:
         )
 
     return f'''
-    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:20px 16px 16px;margin-bottom:28px">
-      <p style="margin:0 0 16px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;text-align:center">Order Progress</p>
+    <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:12px;padding:20px 16px 16px;margin-bottom:28px">
+      <p style="margin:0 0 16px;font-size:11px;font-weight:700;color:#111111;text-transform:uppercase;letter-spacing:0.5px;text-align:center">Order Progress</p>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>{circle_cells}</tr>
         <tr>{label_cells}</tr>
@@ -162,17 +163,17 @@ def _item_rows(items: list) -> str:
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;vertical-align:middle;width:68px">{img_html}</td>
           <td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;vertical-align:middle">
-            <p style="margin:0 0 2px;font-size:13px;font-weight:600;color:#0F172A">{item["name"]}</p>
-            <p style="margin:0;font-size:12px;color:#64748B">Qty: {item["qty"]}</p>
+            <p style="margin:0 0 2px;font-size:13px;font-weight:600;color:#111111">{item["name"]}</p>
+            <p style="margin:0;font-size:12px;color:#333333">Qty: {item["qty"]}</p>
           </td>
           <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;vertical-align:middle;text-align:right;white-space:nowrap">
-            <p style="margin:0;font-size:13px;font-weight:700;color:#16A34A">UGX {item["price"]}</p>
+            <p style="margin:0;font-size:13px;font-weight:700;color:#111111">UGX {item["price"]}</p>
           </td>
         </tr>'''
     return rows
 
 
-def _info_row(icon_path: str, text: str, color: str = '#334155') -> str:
+def _info_row(icon_path: str, text: str, color: str = '#111111') -> str:
     return f'''
     <p style="margin:0 0 10px;font-size:14px;color:{color};display:flex;align-items:center;gap:8px">
       {_icon(icon_path, color, 16)}&nbsp;&nbsp;{text}
@@ -182,23 +183,23 @@ def _info_row(icon_path: str, text: str, color: str = '#334155') -> str:
 def send_welcome_email(name: str, email: str):
     body = f'''
       <div style="text-align:center;margin-bottom:24px">
-        {_circle_icon(ICO_SHOPPING, '#DCFCE7', '#16A34A')}
-        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Welcome aboard, {name}!</h2>
-        <p style="margin:0;font-size:14px;color:#64748B">Your account has been created successfully</p>
+        <img src="{IMG_CART}" width="56" height="56" alt="" style="display:block;margin:0 auto 12px" />
+        <h2 style="margin:0 0 6px;font-size:22px;color:#111111">Welcome aboard, {name}!</h2>
+        <p style="margin:0;font-size:14px;color:#333333">Your account has been created successfully</p>
       </div>
-      <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.7">
-        We're thrilled to have you join the <strong>Majo Gadgets</strong> family. You're all set to start shopping.
+      <p style="margin:0 0 20px;font-size:15px;color:#111111;line-height:1.7">
+        We&#39;re thrilled to have you join the <strong>Majo Gadgets</strong> family. You&#39;re all set to start shopping.
       </p>
       <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:28px">
-        {_info_row(ICO_CHECK,    'Browse hundreds of quality gadgets', '#334155')}
-        {_info_row(ICO_STAR,     'Grab flash deals and exclusive offers', '#334155')}
-        {_info_row(ICO_HEART,    'Save your favourite items to your wishlist', '#334155')}
-        {_info_row(ICO_TRUCK,    'Fast and reliable delivery to your doorstep', '#334155')}
+        {_info_row(ICO_CHECK,    'Browse hundreds of quality gadgets')}
+        {_info_row(ICO_STAR,     'Grab flash deals and exclusive offers')}
+        {_info_row(ICO_HEART,    'Save your favourite items to your wishlist')}
+        {_info_row(ICO_TRUCK,    'Fast and reliable delivery to your doorstep')}
       </div>
       <a href="{settings.FRONTEND_URL}" style="display:inline-block;padding:14px 32px;background:#F59E0B !important;background-color:#F59E0B !important;color:#ffffff !important;border:1px solid #F59E0B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important">
         Start Shopping &rarr;
       </a>
-      <p style="margin:28px 0 0;font-size:13px;color:#94A3B8">If you have any questions, just reply to this email — we're always happy to help.</p>
+      <p style="margin:28px 0 0;font-size:13px;color:#333333">If you have any questions, just reply to this email — we&#39;re always happy to help.</p>
     '''
     _send({'from': FROM, 'to': email, 'subject': 'Welcome to Majo Gadgets!', 'html': _wrap(body)})
 
@@ -207,25 +208,25 @@ def send_admin_new_order_email(order_code: str, customer_name: str, customer_ema
     admin_url = f'{settings.FRONTEND_URL}/admin/orders/{order_code}'
     body = f'''
       <div style="text-align:center;margin-bottom:24px">
-        {_circle_icon(ICO_SHOPPING, '#FEF3C7', '#F59E0B')}
-        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">New Order Received!</h2>
-        <p style="margin:0;font-size:14px;color:#64748B">A customer just placed an order.</p>
+        <img src="{IMG_CART}" width="56" height="56" alt="" style="display:block;margin:0 auto 12px" />
+        <h2 style="margin:0 0 6px;font-size:22px;color:#111111">New Order Received!</h2>
+        <p style="margin:0;font-size:14px;color:#333333">A customer just placed an order.</p>
       </div>
 
       <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
-        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
-        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0F172A;letter-spacing:1.5px">{order_code}</p>
-        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Customer</p>
-        <p style="margin:0 0 12px;font-size:13px;color:#334155">{customer_name} &mdash; {customer_email}</p>
-        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Delivery Address</p>
-        <p style="margin:0 0 16px;font-size:13px;color:#334155">{delivery_address}</p>
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#333333;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#111111;letter-spacing:1.5px">{order_code}</p>
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#333333;text-transform:uppercase;letter-spacing:0.5px">Customer</p>
+        <p style="margin:0 0 12px;font-size:13px;color:#111111">{customer_name} &mdash; {customer_email}</p>
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#333333;text-transform:uppercase;letter-spacing:0.5px">Delivery Address</p>
+        <p style="margin:0 0 16px;font-size:13px;color:#111111">{delivery_address}</p>
         <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
-        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Items Ordered</p>
+        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#333333;text-transform:uppercase;letter-spacing:0.5px">Items Ordered</p>
         <table width="100%" cellpadding="0" cellspacing="0">
           {_item_rows(items)}
           <tr>
-            <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#0F172A">Total</td>
-            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#0F172A;text-align:right">UGX {total}</td>
+            <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#111111">Total</td>
+            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#111111;text-align:right">UGX {total}</td>
           </tr>
         </table>
       </div>
@@ -233,7 +234,7 @@ def send_admin_new_order_email(order_code: str, customer_name: str, customer_ema
       <a href="{admin_url}" style="display:inline-block;padding:14px 32px;background:#071A2B !important;background-color:#071A2B !important;color:#ffffff !important;border:1px solid #071A2B;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none !important">
         View &amp; Confirm Order &rarr;
       </a>
-      <p style="margin:16px 0 0;font-size:13px;color:#94A3B8">Or track it at: <a href="{settings.FRONTEND_URL}/orders/{order_code}" style="color:#1E3A8A !important">{settings.FRONTEND_URL}/orders/{order_code}</a></p>
+      <p style="margin:16px 0 0;font-size:13px;color:#333333">Or track it at: <a href="{settings.FRONTEND_URL}/orders/{order_code}" style="color:#1E3A8A !important">{settings.FRONTEND_URL}/orders/{order_code}</a></p>
     '''
     _send({'from': FROM, 'to': settings.ADMIN_EMAIL, 'subject': f'New Order #{order_code} — UGX {total}', 'html': _wrap(body)})
 
@@ -241,38 +242,38 @@ def send_admin_new_order_email(order_code: str, customer_name: str, customer_ema
 def send_order_placed_email(name: str, email: str, order_code: str, total: str, items: list, delivery_address: str):
     body = f'''
       <div style="text-align:center;margin-bottom:24px">
-        {_circle_icon(ICO_SHOPPING, '#EFF6FF', '#1E3A8A')}
-        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Order Placed!</h2>
-        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>, we've received your order.</p>
+        <img src="{IMG_CART}" width="56" height="56" alt="" style="display:block;margin:0 auto 12px" />
+        <h2 style="margin:0 0 6px;font-size:22px;color:#111111">Order Placed!</h2>
+        <p style="margin:0;font-size:14px;color:#333333">Hi <strong>{name}</strong>, we&#39;ve received your order.</p>
       </div>
 
-      <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
-        Thank you for your order! 🎉 Your order <strong>#{order_code}</strong> has been placed and is awaiting confirmation.
+      <p style="margin:0 0 16px;font-size:15px;color:#111111;line-height:1.7">
+        Thank you for your order! Your order <strong>#{order_code}</strong> has been placed and is awaiting confirmation.
       </p>
-      <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.7">
-        We'll notify you once it's confirmed and being prepared for shipment.
+      <p style="margin:0 0 24px;font-size:15px;color:#111111;line-height:1.7">
+        We&#39;ll notify you once it&#39;s confirmed and being prepared for shipment.
       </p>
 
       {_progress_bar('pending')}
 
       <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
-        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
-        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0F172A;letter-spacing:1.5px">{order_code}</p>
-        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Delivering To</p>
-        <p style="margin:0 0 16px;font-size:13px;color:#334155">{delivery_address}</p>
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#333333;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#111111;letter-spacing:1.5px">{order_code}</p>
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#333333;text-transform:uppercase;letter-spacing:0.5px">Delivering To</p>
+        <p style="margin:0 0 16px;font-size:13px;color:#111111">{delivery_address}</p>
         <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
-        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Items Ordered</p>
+        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#333333;text-transform:uppercase;letter-spacing:0.5px">Items Ordered</p>
         <table width="100%" cellpadding="0" cellspacing="0">
           {_item_rows(items)}
           <tr>
-            <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#0F172A">Total</td>
-            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#0F172A;text-align:right">UGX {total}</td>
+            <td colspan="2" style="padding-top:12px;font-size:14px;font-weight:700;color:#111111">Total</td>
+            <td style="padding-top:12px;font-size:15px;font-weight:800;color:#111111;text-align:right">UGX {total}</td>
           </tr>
         </table>
       </div>
 
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.7">Thank you for shopping with Majo Gadgets! 🛍️</p>
-      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">— The Majo Gadgets Team</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#111111;line-height:1.7">Thank you for shopping with Majo Gadgets!</p>
+      <p style="margin:0;font-size:13px;color:#333333;line-height:1.6">— The Majo Gadgets Team</p>
     '''
     _send({'from': FROM, 'to': email, 'subject': f'Order Placed — #{order_code}', 'html': _wrap(body)})
 
@@ -281,8 +282,8 @@ def send_order_confirmed_email(name: str, email: str, order_code: str, total: st
     body = f'''
       <div style="text-align:center;margin-bottom:24px">
         {_circle_icon(ICO_CHECK, '#ECFDF5', '#059669')}
-        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Order Confirmed!</h2>
-        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>,</p>
+        <h2 style="margin:0 0 6px;font-size:22px;color:#111111">Order Confirmed!</h2>
+        <p style="margin:0;font-size:14px;color:#333333">Hi <strong>{name}</strong>,</p>
       </div>
 
       <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.7">
