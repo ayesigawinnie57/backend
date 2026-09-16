@@ -385,10 +385,13 @@ class InitiatePaymentView(APIView):
         # Lock the order row to prevent duplicate concurrent payment sessions
         try:
             with transaction.atomic():
-                order = Order.objects.select_for_update().select_related('payment').get(code=code, user=request.user)
+                order = Order.objects.select_for_update().get(code=code, user=request.user)
 
-                if hasattr(order, 'payment') and order.payment.status == 'completed':
-                    return Response({'detail': 'Order already paid.'}, status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    if order.payment.status == 'completed':
+                        return Response({'detail': 'Order already paid.'}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception:
+                    pass  # no payment yet — fine
 
                 if order.status not in ('pending', 'processing'):
                     return Response({'detail': 'This order cannot be paid.'}, status=status.HTTP_400_BAD_REQUEST)
