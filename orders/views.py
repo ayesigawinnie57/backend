@@ -396,25 +396,20 @@ class InitiatePaymentView(APIView):
             return Response({'detail': f'Server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def _handle(self, request, code):
-        # Rate limit: max 5 payment attempts per user per minute
         rate_key = f'pay_attempt_{request.user.id}'
         attempts = cache.get(rate_key, 0)
         if attempts >= PAYMENT_RATE_LIMIT:
-            logger.warning('Rate limit hit for payment: user=%s', request.user.email)
             return Response({'detail': 'Too many payment attempts. Please wait a minute.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
         cache.set(rate_key, attempts + 1, PAYMENT_RATE_WINDOW)
 
-        # Lock the order row to prevent duplicate concurrent payment sessions
         try:
             with transaction.atomic():
                 order = Order.objects.select_for_update().get(code=code, user=request.user)
-
                 try:
                     if order.payment.status == 'completed':
                         return Response({'detail': 'Order already paid.'}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception:
-                    pass  # no payment yet — fine
-
+                    pass
                 if order.status not in ('pending', 'processing'):
                     return Response({'detail': 'This order cannot be paid.'}, status=status.HTTP_400_BAD_REQUEST)
         except Order.DoesNotExist:
@@ -427,7 +422,7 @@ class InitiatePaymentView(APIView):
             logger.exception('Pesapal auth/IPN failed for order %s', code)
             return Response({'detail': f'Pesapal setup failed: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
 
-            # Amount always comes from the DB — never from the request body
+        try:
             payload = {
                 'id': order.code,
                 'currency': 'UGX',
@@ -453,25 +448,24 @@ class InitiatePaymentView(APIView):
             logger.info('Pesapal SubmitOrderRequest response: %s', data)
             if not data.get('redirect_url'):
                 raise Exception(f"Pesapal submit failed: {data}")
-
             with transaction.atomic():
                 Payment.objects.update_or_create(
                     pesapal_order_tracking_id=data['order_tracking_id'],
                     defaults={
                         'order': order,
                         'merchant_reference': data.get('merchant_reference', order.code),
-                        'amount': order.total,  # always store server-side amount
+                        'amount': order.total,
                         'status': 'pending',
                     },
                 )
             logger.info('Payment initiated: order=%s tracking=%s user=%s', order.code, data['order_tracking_id'], request.user.email)
             return Response({'redirect_url': data['redirect_url'], 'order_tracking_id': data['order_tracking_id']})
         except http_requests.HTTPError as e:
-            logger.error('Pesapal HTTP error initiating payment for order %s: %s', code, e)
-            return Response({'detail': 'Payment gateway error. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
-        except Exception:
-            logger.exception('Unexpected error initiating payment for order %s', code)
-            return Response({'detail': 'An unexpected error occurred.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error('Pesapal HTTP error for order %s: %s', code, e)
+            return Response({'detail': f'Payment gateway error: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
+        except Exception as e:
+            logger.exception('Unexpected error for order %s', code)
+            return Response({'detail': f'Payment failed: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class PesapalIPNView(APIView):
