@@ -346,7 +346,11 @@ def _pesapal_token():
         timeout=15,
     )
     resp.raise_for_status()
-    return resp.json()['token']
+    data = resp.json()
+    logger.info('Pesapal token response: %s', data)
+    if str(data.get('status')) != '200' or not data.get('token'):
+        raise Exception(f"Pesapal auth failed: {data.get('error') or data}")
+    return data['token']
 
 
 def _register_ipn(token):
@@ -358,7 +362,11 @@ def _register_ipn(token):
         timeout=15,
     )
     resp.raise_for_status()
-    return resp.json()['ipn_id']
+    data = resp.json()
+    logger.info('Pesapal IPN register response: %s', data)
+    if not data.get('ipn_id'):
+        raise Exception(f"Pesapal IPN registration failed: {data}")
+    return data['ipn_id']
 
 
 class InitiatePaymentView(APIView):
@@ -414,6 +422,9 @@ class InitiatePaymentView(APIView):
             )
             resp.raise_for_status()
             data = resp.json()
+            logger.info('Pesapal SubmitOrderRequest response: %s', data)
+            if not data.get('redirect_url'):
+                raise Exception(f"Pesapal submit failed: {data}")
 
             with transaction.atomic():
                 Payment.objects.update_or_create(
