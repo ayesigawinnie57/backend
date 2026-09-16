@@ -90,50 +90,53 @@ def _wrap(body: str) -> str:
     return BASE.replace('{logo}', LOGO).replace('{body}', body)
 
 
+# ── Progress step images ─────────────────────────────────────────────────────
+_STEP_IMGS = [
+    ('pending',          'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549511/Order_placed.png',       'Placed'),
+    ('processing',       'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549477/order_confirmed.png',    'Confirmed'),
+    ('shipped',          'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549510/Shipped_order.png',      'Shipped'),
+    ('ready_for_pickup', 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549694/ready_for_pickup.png',   'Ready for Pickup'),
+    ('delivered',        'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549452/Delivered.png',          'Delivered'),
+]
+
+
 def _progress_bar(active: str) -> str:
-    steps = [
-        ('pending',    ICO_PACKAGE,  'Placed'),
-        ('processing', ICO_PACKAGE,  'Confirmed'),
-        ('shipped',    ICO_TRUCK,    'Shipped'),
-        ('delivered',  ICO_CHECK,    'Delivered'),
-    ]
-    order = [s[0] for s in steps]
+    order = [s[0] for s in _STEP_IMGS]
     active_idx = order.index(active) if active in order else 0
 
     circle_cells = ''
     label_cells = ''
-    for idx, (key, icon_path, label) in enumerate(steps):
+    pct = f'{100 // len(_STEP_IMGS)}%'
+    for idx, (key, img_url, label) in enumerate(_STEP_IMGS):
         done = idx <= active_idx
         is_active = idx == active_idx
-        circle_bg = '#F59E0B' if done else '#E2E8F0'
-        icon_color = '#ffffff' if done else '#94A3B8'
+        opacity = '1' if done else '0.35'
         label_color = '#F59E0B' if is_active or done else '#94A3B8'
         label_weight = '700' if is_active or done else '400'
-        svg = _icon(icon_path, icon_color, 18)
 
-        if idx < len(steps) - 1:
+        img_tag = f'<img src="{img_url}" width="40" height="40" alt="{label}" style="display:block;opacity:{opacity}" />'
+
+        if idx < len(_STEP_IMGS) - 1:
             line_color = '#F59E0B' if idx < active_idx else '#E2E8F0'
             circle_cells += (
-                f'<td align="center" valign="middle" style="width:25%;padding:0">'
+                f'<td align="center" valign="middle" style="width:{pct};padding:0">'
                 f'<table width="100%" cellpadding="0" cellspacing="0"><tr>'
                 f'<td align="center" valign="middle" style="padding:0">'
                 f'<table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>'
-                f'<td align="center" valign="middle" style="width:40px;height:40px;border-radius:50%;background:{circle_bg};text-align:center">'
-                f'{svg}</td></tr></table></td>'
-                f'<td valign="middle" style="width:100%;padding:0"><div style="height:3px;background:{line_color};margin-left:6px;margin-right:6px;border-radius:999px"></div></td>'
+                f'<td align="center" valign="middle" style="width:40px;height:40px">{img_tag}</td></tr></table></td>'
+                f'<td valign="middle" style="width:100%;padding:0"><div style="height:3px;background:{line_color};margin-left:4px;margin-right:4px;border-radius:999px"></div></td>'
                 f'</tr></table></td>'
             )
         else:
             circle_cells += (
-                f'<td align="center" valign="middle" style="width:25%;padding:0">'
+                f'<td align="center" valign="middle" style="width:{pct};padding:0">'
                 f'<table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>'
-                f'<td align="center" valign="middle" style="width:40px;height:40px;border-radius:50%;background:{circle_bg};text-align:center">'
-                f'{svg}</td></tr></table></td>'
+                f'<td align="center" valign="middle" style="width:40px;height:40px">{img_tag}</td></tr></table></td>'
             )
 
         label_cells += (
-            f'<td align="center" style="width:25%;padding-top:8px">'
-            f'<p style="margin:0;font-size:11px;color:{label_color};font-weight:{label_weight};white-space:nowrap">{label}</p>'
+            f'<td align="center" style="width:{pct};padding-top:8px">'
+            f'<p style="margin:0;font-size:10px;color:{label_color};font-weight:{label_weight};white-space:nowrap">{label}</p>'
             f'</td>'
         )
 
@@ -344,6 +347,31 @@ def send_order_shipped_email(name: str, email: str, order_code: str, delivery_ad
       <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">If you have any questions about your delivery, reply to this email and we&#39;ll be happy to help.</p>
     '''
     _send({'from': FROM, 'to': email, 'subject': f'Your Order is Shipped — #{order_code}', 'html': _wrap(body)})
+
+
+def send_order_ready_for_pickup_email(name: str, email: str, order_code: str, pickup_address: str = ''):
+    body = f'''
+      <div style="text-align:center;margin-bottom:24px">
+        {_circle_icon(ICO_MAP_PIN, '#FEF3C7', '#F59E0B')}
+        <h2 style="margin:0 0 6px;font-size:22px;color:#0F172A">Your Order is Ready for Pickup!</h2>
+        <p style="margin:0;font-size:14px;color:#64748B">Hi <strong>{name}</strong>, your order is waiting for you.</p>
+      </div>
+
+      {_progress_bar('ready_for_pickup')}
+
+      <div style="background:#ffffff;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
+        <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Order Code</p>
+        <p style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0F172A;letter-spacing:1.5px">{order_code}</p>
+        {f'<p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">Pickup Location</p><p style="margin:0 0 16px;font-size:13px;color:#334155">{pickup_address}</p>' if pickup_address else ''}
+        <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 16px" />
+        {_info_row(ICO_MAP_PIN, 'Please bring your order code when picking up')}
+        {_info_row(ICO_CLOCK,   'Pick up your order at your earliest convenience')}
+        {_info_row(ICO_PHONE,   'Contact us if you need assistance')}
+      </div>
+
+      <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">If you have any questions, reply to this email and we&#39;ll be happy to help.</p>
+    '''
+    _send({'from': FROM, 'to': email, 'subject': f'Your Order is Ready for Pickup — #{order_code}', 'html': _wrap(body)})
 
 
 def send_order_delivered_email(name: str, email: str, order_code: str, total: str = '', items: list | None = None, delivery_address: str = ''):

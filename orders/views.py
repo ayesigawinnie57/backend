@@ -15,6 +15,7 @@ from users.emails import (
     send_order_placed_email,
     send_order_confirmed_email,
     send_order_shipped_email,
+    send_order_ready_for_pickup_email,
     send_order_delivered_email,
     send_order_cancelled_email,
     send_order_rating_email,
@@ -299,7 +300,7 @@ class AdminOrderShipView(APIView):
         return Response(OrderSerializer(order).data)
 
 
-class AdminOrderDeliverView(APIView):
+class AdminOrderReadyForPickupView(APIView):
     permission_classes = (permissions.IsAdminUser,)
 
     def post(self, request, code):
@@ -309,7 +310,28 @@ class AdminOrderDeliverView(APIView):
             return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         if order.status != 'shipped':
-            return Response({'detail': 'Only shipped orders can be marked as delivered.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Only shipped orders can be marked as ready for pickup.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        order.status = 'ready_for_pickup'
+        order.save(update_fields=['status', 'updated_at'])
+        try:
+            send_order_ready_for_pickup_email(order.user.name, order.user.email, order.code, order.delivery_address)
+        except Exception:
+            logger.exception('Failed to send ready for pickup email for order %s', code)
+        _notify(order.user, 'order', f'Order #{order.code} Ready for Pickup', 'Your order is ready! Please come pick it up at your earliest convenience.')
+        return Response(OrderSerializer(order).data)
+
+class AdminOrderDeliverView(APIView):
+    permission_classes = (permissions.IsAdminUser,)
+
+    def post(self, request, code):
+        try:
+            order = Order.objects.select_related('user').get(code=code)
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if order.status != 'ready_for_pickup':
+            return Response({'detail': 'Only ready-for-pickup orders can be marked as delivered.'}, status=status.HTTP_400_BAD_REQUEST)
 
         order.status = 'delivered'
         order.save(update_fields=['status', 'updated_at'])

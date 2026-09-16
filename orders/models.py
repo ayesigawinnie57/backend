@@ -43,6 +43,7 @@ class Order(models.Model):
         ('pending', 'Pending'),
         ('processing', 'Confirmed'),
         ('shipped', 'Shipped'),
+        ('ready_for_pickup', 'Ready for Pickup'),
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled'),
     ]
