@@ -401,6 +401,9 @@ class InitiatePaymentView(APIView):
         try:
             token = _pesapal_token()
             ipn_id = _register_ipn(token)
+        except Exception as e:
+            logger.exception('Pesapal auth/IPN failed for order %s', code)
+            return Response({'detail': f'Pesapal setup failed: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
 
             # Amount always comes from the DB — never from the request body
             payload = {
