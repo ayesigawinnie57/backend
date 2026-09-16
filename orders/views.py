@@ -51,6 +51,7 @@ def _restore_stock(order):
 
 
 PAYMENT_RATE_WINDOW = 60
+PAYMENT_RATE_LIMIT  = 5
 
 
 class OrderListCreateView(generics.ListCreateAPIView):
