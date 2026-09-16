@@ -514,9 +514,31 @@ class PesapalIPNView(APIView):
             payment_status_desc = data.get('payment_status_description', '').lower()
             mapped = {'completed': 'completed', 'failed': 'failed', 'invalid': 'invalid', 'cancelled': 'cancelled'}.get(payment_status_desc, 'pending')
 
-            payment.status = mapped
-            payment.payment_method = data.get('payment_method', '')
-            payment.save(update_fields=['status', 'payment_method', 'updated_at'])
+            with transaction.atomic():
+                payment.status = mapped
+                payment.payment_method = data.get('payment_method', '')
+                payment.save(update_fields=['status', 'payment_method', 'updated_at'])
+
+                order = payment.order
+                if order:
+                    from products.models import Product
+                    if mapped == 'completed' and order.status == 'pending':
+                        # Deduct stock now that payment is confirmed
+                        for item in order.items.select_related('product').all():
+                            if item.product:
+                                Product.objects.filter(pk=item.product.pk).update(
+                                    stock=models.F('stock') - item.quantity
+                                )
+                        order.status = 'processing'
+                        order.save(update_fields=['status', 'updated_at'])
+                        _notify(order.user, 'order', f'Order #{order.code} Confirmed',
+                                'Payment received! Your order is being prepared.')
+                    elif mapped in ('failed', 'invalid', 'cancelled') and order.status == 'pending':
+                        order.status = 'cancelled'
+                        order.cancel_reason = f'Payment {mapped}.'
+                        order.save(update_fields=['status', 'cancel_reason', 'updated_at'])
+                        _notify(order.user, 'order', f'Order #{order.code} Cancelled',
+                                f'Your order was cancelled because payment {mapped}.')
 
             logger.info('IPN processed: tracking=%s status=%s', tracking_id, mapped)
             return Response({'orderNotificationType': 'IPNCHANGE', 'orderTrackingId': tracking_id, 'orderMerchantReference': merchant_ref, 'status': 200})

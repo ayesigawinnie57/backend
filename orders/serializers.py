@@ -32,13 +32,20 @@ class OrderSerializer(serializers.ModelSerializer):
     has_service_rating = serializers.SerializerMethodField()
     user_name = serializers.CharField(source='user.name', read_only=True)
     user_email = serializers.CharField(source='user.email', read_only=True)
+    payment = serializers.SerializerMethodField()
 
     def get_has_service_rating(self, obj):
         return hasattr(obj, 'service_rating')
 
+    def get_payment(self, obj):
+        try:
+            return {'status': obj.payment.status}
+        except Exception:
+            return None
+
     class Meta:
         model = Order
-        fields = ('id', 'code', 'status', 'subtotal', 'delivery_fee', 'total', 'items', 'delivery_address', 'phone', 'note', 'cancel_reason', 'has_service_rating', 'user_name', 'user_email', 'created_at', 'updated_at')
+        fields = ('id', 'code', 'status', 'subtotal', 'delivery_fee', 'total', 'items', 'delivery_address', 'phone', 'note', 'cancel_reason', 'has_service_rating', 'payment', 'user_name', 'user_email', 'created_at', 'updated_at')
         read_only_fields = ('id', 'code', 'subtotal', 'delivery_fee', 'total', 'status', 'cancel_reason', 'created_at', 'updated_at')
 
     def create(self, validated_data):
@@ -67,8 +74,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 product = locked[item['product'].pk]
                 item['price'] = product.price
                 OrderItem.objects.create(order=order, **item)
-                product.stock -= item['quantity']
-                product.save(update_fields=['stock'])
+                # Stock is reserved but NOT deducted until payment is confirmed
 
         return order
 
