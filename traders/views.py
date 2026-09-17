@@ -125,6 +125,31 @@ class TraderDashboardView(APIView):
 
 # ── Trader: products ──────────────────────────────────────────────────────────
 
+def _sync_to_product(trader_product):
+    from products.models import Product
+    from django.core.cache import cache
+    product, _ = Product.objects.update_or_create(
+        trader=trader_product.trader,
+        name=trader_product.name,
+        defaults={
+            'short_description': trader_product.short_description or trader_product.description,
+            'long_description': trader_product.long_description,
+            'price': trader_product.price,
+            'original_price': trader_product.original_price,
+            'delivery_fee': trader_product.delivery_fee,
+            'stock': trader_product.stock,
+            'category': trader_product.category,
+            'image': trader_product.image,
+            'is_active': trader_product.is_active and trader_product.trader.is_visible,
+            'is_featured': trader_product.is_featured,
+            'is_new_deal': trader_product.is_new_deal,
+        },
+    )
+    cache.delete('products:list')
+    cache.delete(f'products:detail:{product.pk}')
+    return product
+
+
 class TraderProductListView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -154,7 +179,8 @@ class TraderProductListView(APIView):
                 extra['category'] = Category.objects.get(pk=category_id)
             except Category.DoesNotExist:
                 pass
-        serializer.save(trader=trader, **extra)
+        tp = serializer.save(trader=trader, **extra)
+        _sync_to_product(tp)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -196,7 +222,8 @@ class TraderProductDetailView(APIView):
                 extra['category'] = Category.objects.get(pk=category_id)
             except Category.DoesNotExist:
                 pass
-        serializer.save(**extra)
+        tp = serializer.save(**extra)
+        _sync_to_product(tp)
         return Response(serializer.data)
 
     def delete(self, request, trader_uuid, product_uuid):
@@ -205,6 +232,10 @@ class TraderProductDetailView(APIView):
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
         if trader.email != request.user.email and not request.user.is_staff:
             return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+        from products.models import Product
+        from django.core.cache import cache
+        Product.objects.filter(trader=trader, name=product.name).update(is_active=False)
+        cache.delete('products:list')
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
