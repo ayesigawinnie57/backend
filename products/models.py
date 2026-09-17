@@ -36,6 +36,10 @@ class Product(models.Model):
         'traders.TraderApplication', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='store_products'
     )
+    trader_product = models.OneToOneField(
+        'traders.TraderProduct', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='public_product'
+    )
     is_featured = models.BooleanField(default=False)
     is_new_deal = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

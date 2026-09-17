@@ -129,9 +129,10 @@ def _sync_to_product(trader_product):
     from products.models import Product
     from django.core.cache import cache
     product, _ = Product.objects.update_or_create(
-        trader=trader_product.trader,
-        name=trader_product.name,
+        trader_product=trader_product,
         defaults={
+            'trader': trader_product.trader,
+            'name': trader_product.name,
             'short_description': trader_product.short_description or trader_product.description,
             'long_description': trader_product.long_description,
             'price': trader_product.price,
@@ -234,8 +235,12 @@ class TraderProductDetailView(APIView):
             return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
         from products.models import Product
         from django.core.cache import cache
-        Product.objects.filter(trader=trader, name=product.name).update(is_active=False)
-        cache.delete('products:list')
+        pub = Product.objects.filter(trader_product=product).first()
+        if pub:
+            pub.is_active = False
+            pub.save(update_fields=['is_active'])
+            cache.delete('products:list')
+            cache.delete(f'products:detail:{pub.pk}')
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
