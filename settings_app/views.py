@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status, generics
-from .models import PlatformSettings, DeliverySettings, District, CookiePolicy
-from .serializers import PlatformSettingsSerializer, DeliverySettingsSerializer, DistrictSerializer, CookiePolicySerializer
+from .models import PlatformSettings, DeliverySettings, District, CookiePolicy, CookieConsent
+from .serializers import PlatformSettingsSerializer, DeliverySettingsSerializer, DistrictSerializer, CookiePolicySerializer, CookieConsentSerializer
 from django.contrib.auth import get_user_model
 from users.serializers import UserSerializer, UpdateProfileSerializer
 
@@ -116,6 +116,25 @@ class CookiePolicyView(APIView):
     def patch(self, request):
         instance = CookiePolicy.get()
         serializer = CookiePolicySerializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class CookieConsentView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        return Response(CookieConsentSerializer(CookieConsent.get()).data)
+
+    def post(self, request):
+        instance = CookieConsent.get()
+        payload = {
+            'necessary': request.data.get('necessary', True),
+            'analytics': request.data.get('analytics', False),
+            'marketing': request.data.get('marketing', False),
+        }
+        serializer = CookieConsentSerializer(instance, data=payload, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)

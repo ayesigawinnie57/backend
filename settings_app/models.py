@@ -70,3 +70,23 @@ class CookiePolicy(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
+
+
+class CookieConsent(models.Model):
+    """Singleton — stores the latest user cookie preference choice."""
+    necessary = models.BooleanField(default=True)
+    analytics = models.BooleanField(default=False)
+    marketing = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Cookie Consent'
+
+    @classmethod
+    def get(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
