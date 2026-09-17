@@ -5,7 +5,10 @@ from products.serializers import ProductSerializer
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    order_code = serializers.CharField(source='order.code', read_only=True, default=None)
+    order_code = serializers.SerializerMethodField()
+
+    def get_order_code(self, obj):
+        return obj.order.code if obj.order else None
 
     class Meta:
         model = Payment
@@ -33,7 +36,7 @@ class OrderSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.name', read_only=True)
     user_email = serializers.CharField(source='user.email', read_only=True)
     payment = serializers.SerializerMethodField()
-    status_changed_by_name = serializers.CharField(source='status_changed_by.name', read_only=True, default=None)
+    status_changed_by_name = serializers.SerializerMethodField()
 
     def get_has_service_rating(self, obj):
         return hasattr(obj, 'service_rating')
@@ -43,6 +46,9 @@ class OrderSerializer(serializers.ModelSerializer):
             return {'status': obj.payment.status}
         except Exception:
             return None
+
+    def get_status_changed_by_name(self, obj):
+        return obj.status_changed_by.name if obj.status_changed_by else None
 
     class Meta:
         model = Order

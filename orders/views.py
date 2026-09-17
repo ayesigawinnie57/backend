@@ -358,8 +358,12 @@ class AdminOrderDeliverView(APIView):
         except Exception:
             logger.exception('Failed to send order delivered email for order %s', code)
         _notify(order.user, 'order', f'Order #{order.code} Delivered', 'Your order has been delivered! Enjoy your new gadget. ❤️')
-        # Schedule service + product rating emails and notifications 5 minutes after delivery
-        send_product_rating_notifications.apply_async((order.id,), countdown=300)
+        # Schedule service + product rating emails and notifications 5 minutes after delivery.
+        # This must never break the API if Redis/Celery is temporarily unavailable.
+        try:
+            send_product_rating_notifications.apply_async((order.id,), countdown=300)
+        except Exception:
+            logger.exception('Failed to queue product rating notifications for order %s', code)
         return Response(OrderSerializer(order).data)
 
 
