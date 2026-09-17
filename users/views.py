@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model, authenticate
 from django.core.cache import cache
 from django.conf import settings
 from .serializers import RegisterSerializer, UserSerializer, UpdateProfileSerializer, CartItemSerializer, WishlistItemSerializer, NotificationSerializer
-from .models import CartItem, WishlistItem, Notification
+from .models import CartItem, WishlistItem, Notification, UserBehaviour
 from .emails import send_welcome_email, send_password_reset_email, send_password_changed_email
 from .sms import send_welcome_sms
 
@@ -374,3 +374,189 @@ class CompleteGoogleProfileView(APIView):
 
         refresh = RefreshToken.for_user(user)
         return Response({'access': str(refresh.access_token), 'refresh': str(refresh)})
+
+
+# ── Behaviour tracking ────────────────────────────────────────────────────────
+
+SCORE_MAP = {'view': 1, 'click': 3, 'category': 5}
+MAX_RECENT = 60
+
+
+def _update_behaviour(user, event_type, category_slug, product_id=None):
+    behaviour, _ = UserBehaviour.objects.get_or_create(user=user)
+    scores = dict(behaviour.category_scores or {})
+    recent = list(behaviour.recent_product_ids or [])
+    if category_slug:
+        scores[category_slug] = scores.get(category_slug, 0) + SCORE_MAP.get(event_type, 1)
+    if product_id:
+        recent = [product_id] + [pid for pid in recent if pid != product_id]
+        recent = recent[:MAX_RECENT]
+    behaviour.category_scores = scores
+    behaviour.recent_product_ids = recent
+    behaviour.save(update_fields=['category_scores', 'recent_product_ids', 'updated_at'])
+
+
+class BehaviourTrackView(APIView):
+    """
+    POST /api/auth/behaviour/
+    { event: 'view'|'click'|'category', category_slug: str, product_id?: int }
+    """
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        event = request.data.get('event', '')
+        category_slug = request.data.get('category_slug', '').strip()
+        if event not in SCORE_MAP or not category_slug:
+            return Response({'detail': 'Invalid payload.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            product_id = int(request.data['product_id']) if request.data.get('product_id') else None
+        except (ValueError, TypeError):
+            product_id = None
+        _update_behaviour(request.user, event, category_slug, product_id)
+        return Response({'status': 'ok'})
+
+
+class RecommendedProductsView(APIView):
+    """
+    GET /api/auth/recommended/?page=1&page_size=12&exclude=1,2,3
+    Returns products ranked by the authenticated user's behaviour scores.
+    Falls back to random order for guests.
+    """
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        import random
+        from products.models import Product
+        from products.serializers import ProductSerializer
+
+        page = max(1, int(request.query_params.get('page', 1)))
+        page_size = min(24, int(request.query_params.get('page_size', 12)))
+        exclude_ids = set()
+        for x in request.query_params.get('exclude', '').split(','):
+            try:
+                exclude_ids.add(int(x.strip()))
+            except ValueError:
+                pass
+
+        qs = Product.objects.filter(is_active=True).select_related('category').prefetch_related('images')
+        if exclude_ids:
+            qs = qs.exclude(id__in=exclude_ids)
+
+        products = list(qs)
+        total = len(products)
+
+        if request.user and request.user.is_authenticated:
+            behaviour = getattr(request.user, 'behaviour', None)
+            scores = dict(behaviour.category_scores) if behaviour else {}
+            recent_ids = set(behaviour.recent_product_ids) if behaviour else set()
+
+            def rank(p):
+                cat_slug = p.category.slug if p.category else ''
+                return scores.get(cat_slug, 0) + (-20 if p.id in recent_ids else 0) + random.uniform(0, 3)
+
+            products.sort(key=rank, reverse=True)
+        else:
+            random.shuffle(products)
+
+        start = (page - 1) * page_size
+        page_products = products[start:start + page_size]
+        has_next = (start + page_size) < total
+
+        return Response({
+            'results': ProductSerializer(page_products, many=True).data,
+            'count': total,
+            'next': page + 1 if has_next else None,
+        })
+
+
+# ── Behaviour tracking ────────────────────────────────────────────────────────
+
+SCORE_MAP = {'view': 1, 'click': 3, 'category': 5}
+MAX_RECENT = 60
+
+
+def _update_behaviour(user, event_type, category_slug, product_id=None):
+    behaviour, _ = UserBehaviour.objects.get_or_create(user=user)
+    scores = dict(behaviour.category_scores or {})
+    recent = list(behaviour.recent_product_ids or [])
+    if category_slug:
+        scores[category_slug] = scores.get(category_slug, 0) + SCORE_MAP.get(event_type, 1)
+    if product_id:
+        recent = [product_id] + [pid for pid in recent if pid != product_id]
+        recent = recent[:MAX_RECENT]
+    behaviour.category_scores = scores
+    behaviour.recent_product_ids = recent
+    behaviour.save(update_fields=['category_scores', 'recent_product_ids', 'updated_at'])
+
+
+class BehaviourTrackView(APIView):
+    """
+    POST /api/auth/behaviour/
+    { event: 'view'|'click'|'category', category_slug: str, product_id?: int }
+    """
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        event = request.data.get('event', '')
+        category_slug = request.data.get('category_slug', '').strip()
+        if event not in SCORE_MAP or not category_slug:
+            return Response({'detail': 'Invalid payload.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            product_id = int(request.data['product_id']) if request.data.get('product_id') else None
+        except (ValueError, TypeError):
+            product_id = None
+        _update_behaviour(request.user, event, category_slug, product_id)
+        return Response({'status': 'ok'})
+
+
+class RecommendedProductsView(APIView):
+    """
+    GET /api/auth/recommended/?page=1&page_size=12&exclude=1,2,3
+    Returns products ranked by the authenticated user's behaviour scores.
+    Falls back to random order for guests.
+    """
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        import random
+        from products.models import Product
+        from products.serializers import ProductSerializer
+
+        page = max(1, int(request.query_params.get('page', 1)))
+        page_size = min(24, int(request.query_params.get('page_size', 12)))
+        exclude_ids = set()
+        for x in request.query_params.get('exclude', '').split(','):
+            try:
+                exclude_ids.add(int(x.strip()))
+            except ValueError:
+                pass
+
+        qs = Product.objects.filter(is_active=True).select_related('category').prefetch_related('images')
+        if exclude_ids:
+            qs = qs.exclude(id__in=exclude_ids)
+
+        products = list(qs)
+        total = len(products)
+
+        if request.user and request.user.is_authenticated:
+            behaviour = getattr(request.user, 'behaviour', None)
+            scores = dict(behaviour.category_scores) if behaviour else {}
+            recent_ids = set(behaviour.recent_product_ids) if behaviour else set()
+
+            def rank(p):
+                cat_slug = p.category.slug if p.category else ''
+                return scores.get(cat_slug, 0) + (-20 if p.id in recent_ids else 0) + random.uniform(0, 3)
+
+            products.sort(key=rank, reverse=True)
+        else:
+            random.shuffle(products)
+
+        start = (page - 1) * page_size
+        page_products = products[start:start + page_size]
+        has_next = (start + page_size) < total
+
+        return Response({
+            'results': ProductSerializer(page_products, many=True).data,
+            'count': total,
+            'next': page + 1 if has_next else None,
+        })

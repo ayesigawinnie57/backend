@@ -100,3 +100,34 @@ class WishlistItem(models.Model):
 
     def __str__(self):
         return f'{self.user.email} — {self.product_name}'
+
+
+class UserBehaviour(models.Model):
+    """Stores per-user category interest scores and recently seen product ids."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='behaviour')
+    # JSON: { category_slug: score }
+    category_scores = models.JSONField(default=dict)
+    # JSON: [product_id, ...] most recent first, capped at 60
+    recent_product_ids = models.JSONField(default=list)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Behaviour({self.user.email})'
+
+    @classmethod
+    def get_for_user(cls, user):
+        return cls.objects.get_or_create(user=user)[0]
+
+    def track_category(self, category_slug, score=1, product_id=None):
+        if not category_slug:
+            return
+        scores = dict(self.category_scores or {})
+        scores[category_slug] = scores.get(category_slug, 0) + score
+        self.category_scores = scores
+
+        if product_id is not None:
+            seen = [pid for pid in (self.recent_product_ids or []) if pid != product_id]
+            seen.insert(0, int(product_id))
+            self.recent_product_ids = seen[:60]
+
+        self.save(update_fields=['category_scores', 'recent_product_ids', 'updated_at'])

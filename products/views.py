@@ -17,6 +17,7 @@ from .serializers import (
 )
 from .permissions import IsAdminOrReadOnly
 from orders.models import OrderItem
+from users.models import UserBehaviour
 
 
 CATEGORY_CACHE_TTL = 60 * 30  # 30 minutes
@@ -159,6 +160,65 @@ class ProductSlugDetailView(generics.RetrieveAPIView):
     permission_classes = (IsAdminOrReadOnly,)
     lookup_field = 'slug'
     lookup_url_kwarg = 'slug'
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user.is_authenticated and instance.category:
+            UserBehaviour.get_for_user(request.user).track_category(instance.category.slug, score=1, product_id=instance.pk)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+
+class RecommendedProductsView(APIView):
+    """GET /api/products/recommended/ — personalized list for the landing page."""
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        products = _get_recommended_products_for_user(request.user if getattr(request, 'user', None) and request.user.is_authenticated else None, limit=12)
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
+
+
+def _get_recommended_products_for_user(user, limit=12):
+    qs = Product.objects.filter(is_active=True).select_related('category').prefetch_related('images').order_by('-rating', '-created_at')
+
+    if not user or not user.is_authenticated:
+        return list(qs[:limit])
+
+    behaviour = UserBehaviour.objects.filter(user=user).first()
+    category_scores = dict((behaviour.category_scores or {})) if behaviour else {}
+
+    user_order_categories = set(
+        OrderItem.objects.filter(order__user=user)
+        .exclude(product__category__isnull=True)
+        .values_list('product__category__slug', flat=True)
+    )
+
+    for category_slug in user_order_categories:
+        category_scores[category_slug] = category_scores.get(category_slug, 0) + 25
+
+    seen_product_ids = set(OrderItem.objects.filter(order__user=user).values_list('product_id', flat=True))
+    if behaviour:
+        seen_product_ids.update(int(pid) for pid in (behaviour.recent_product_ids or []))
+
+    if not category_scores:
+        return list(qs.exclude(pk__in=seen_product_ids)[:limit])
+
+    ranked = []
+    for product in qs.exclude(pk__in=seen_product_ids):
+        slug = product.category.slug if product.category else ''
+        score = float(category_scores.get(slug, 0)) * 20.0
+        score += float(product.rating or 0) * 4.0
+        if product.is_featured:
+            score += 30
+        if product.is_new_deal:
+            score += 15
+        if product.original_price and product.price < product.original_price:
+            score += 10
+        ranked.append((score, product))
+
+    ranked.sort(key=lambda item: item[0], reverse=True)
+    return [product for _, product in ranked[:limit]]
 
 
 # ── Flash Sales ─────────────────────────────────────────────────────────────

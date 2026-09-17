@@ -7,11 +7,12 @@ from .views import (
     ProductShareView,
     ProductReviewListCreateView, ProductReviewDetailView,
     ProductReviewEligibilityView, ProductRatingSummaryView,
-    MyReviewsView,
+    MyReviewsView, RecommendedProductsView,
 )
 
 urlpatterns = [
     path('', ProductListView.as_view(), name='product-list'),
+    path('recommended/', RecommendedProductsView.as_view(), name='product-recommendations'),
     path('reviews/mine/', MyReviewsView.as_view(), name='my-reviews'),
     path('flash-sales/', FlashSaleListCreateView.as_view(), name='flash-sale-list'),
     path('flash-sales/<int:pk>/', FlashSaleDetailView.as_view(), name='flash-sale-detail'),

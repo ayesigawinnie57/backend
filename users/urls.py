@@ -8,6 +8,7 @@ from .views import (
     ForgotPasswordView, ResetPasswordView,
     NotificationsView, NotificationDetailView, NotificationMarkAllReadView,
     GoogleLoginView, CompleteGoogleProfileView,
+    BehaviourTrackView, RecommendedProductsView,
 )
 
 urlpatterns = [
@@ -28,4 +29,6 @@ urlpatterns = [
     path('notifications/', NotificationsView.as_view(), name='notifications'),
     path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='notifications-mark-all-read'),
     path('notifications/<int:pk>/', NotificationDetailView.as_view(), name='notification-detail'),
+    path('behaviour/', BehaviourTrackView.as_view(), name='behaviour-track'),
+    path('recommended/', RecommendedProductsView.as_view(), name='recommended-products'),
 ]

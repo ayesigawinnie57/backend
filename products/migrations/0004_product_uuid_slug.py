@@ -31,7 +31,18 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.SeparateDatabaseAndState(
-            database_operations=[],
+            database_operations=[
+                migrations.RunSQL(
+                    sql="""
+                        ALTER TABLE products_product ADD COLUMN uuid TEXT;
+                        ALTER TABLE products_product ADD COLUMN slug VARCHAR(320);
+                    """,
+                    reverse_sql="""
+                        ALTER TABLE products_product DROP COLUMN uuid;
+                        ALTER TABLE products_product DROP COLUMN slug;
+                    """,
+                ),
+            ],
             state_operations=[
                 migrations.AddField(
                     model_name='product',
