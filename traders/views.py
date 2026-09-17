@@ -620,5 +620,6 @@ class TraderOrderItemUpdateView(APIView):
 
         item.status = new_status
         item.note = request.data.get('note', item.note)
-        item.save(update_fields=['status', 'note', 'updated_at'])
+        item.status_changed_by = request.user
+        item.save(update_fields=['status', 'note', 'status_changed_by', 'updated_at'])
         return Response(TraderOrderItemSerializer(item).data)

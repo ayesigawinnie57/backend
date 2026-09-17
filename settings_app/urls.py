@@ -3,6 +3,7 @@ from .views import (
     PlatformSettingsView, DeliverySettingsView,
     DistrictListView, DistrictDetailView,
     AdminUserDetailView, AdminUserCreateView,
+    CookiePolicyView,
 )
 
 urlpatterns = [
@@ -10,4 +11,5 @@ urlpatterns = [
     path('delivery/', DeliverySettingsView.as_view(), name='delivery-settings'),
     path('districts/', DistrictListView.as_view(), name='district-list'),
     path('districts/<int:pk>/', DistrictDetailView.as_view(), name='district-detail'),
+    path('cookie-policy/', CookiePolicyView.as_view(), name='cookie-policy'),
 ]

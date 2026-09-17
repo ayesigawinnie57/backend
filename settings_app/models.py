@@ -52,3 +52,21 @@ class District(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class CookiePolicy(models.Model):
+    """Singleton — always use CookiePolicy.get()"""
+    content = models.TextField(blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Cookie Policy'
+
+    @classmethod
+    def get(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)

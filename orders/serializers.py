@@ -33,6 +33,7 @@ class OrderSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.name', read_only=True)
     user_email = serializers.CharField(source='user.email', read_only=True)
     payment = serializers.SerializerMethodField()
+    status_changed_by_name = serializers.CharField(source='status_changed_by.name', read_only=True, default=None)
 
     def get_has_service_rating(self, obj):
         return hasattr(obj, 'service_rating')
@@ -45,8 +46,8 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ('id', 'code', 'status', 'subtotal', 'delivery_fee', 'total', 'items', 'delivery_address', 'phone', 'note', 'cancel_reason', 'has_service_rating', 'payment', 'user_name', 'user_email', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'code', 'subtotal', 'delivery_fee', 'total', 'status', 'cancel_reason', 'created_at', 'updated_at')
+        fields = ('id', 'code', 'status', 'subtotal', 'delivery_fee', 'total', 'items', 'delivery_address', 'phone', 'note', 'cancel_reason', 'has_service_rating', 'payment', 'user_name', 'user_email', 'status_changed_by_name', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'code', 'subtotal', 'delivery_fee', 'total', 'status', 'cancel_reason', 'status_changed_by_name', 'created_at', 'updated_at')
 
     def create(self, validated_data):
         from django.db import transaction

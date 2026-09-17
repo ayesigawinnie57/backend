@@ -237,7 +237,8 @@ class AdminOrderConfirmView(APIView):
             return Response({'detail': 'Only pending orders can be confirmed.'}, status=status.HTTP_400_BAD_REQUEST)
 
         order.status = 'processing'
-        order.save(update_fields=['status', 'updated_at'])
+        order.status_changed_by = request.user
+        order.save(update_fields=['status', 'status_changed_by', 'updated_at'])
         try:
             items = [{'name': i.product.name, 'qty': i.quantity, 'price': f'{i.price:,.0f}', 'image': _product_image(i.product)} for i in order.items.select_related('product').all()]
             send_order_confirmed_email(order.user.name, order.user.email, order.code, f'{order.total:,.0f}', items, order.delivery_address)
@@ -268,7 +269,8 @@ class AdminOrderCancelView(APIView):
         with transaction.atomic():
             order.status = 'cancelled'
             order.cancel_reason = reason
-            order.save(update_fields=['status', 'cancel_reason', 'updated_at'])
+            order.status_changed_by = request.user
+            order.save(update_fields=['status', 'cancel_reason', 'status_changed_by', 'updated_at'])
             _restore_stock(order)
         try:
             send_order_cancelled_email(order.user.name, order.user.email, order.code, reason)
@@ -291,7 +293,8 @@ class AdminOrderShipView(APIView):
             return Response({'detail': 'Only confirmed orders can be marked as shipped.'}, status=status.HTTP_400_BAD_REQUEST)
 
         order.status = 'shipped'
-        order.save(update_fields=['status', 'updated_at'])
+        order.status_changed_by = request.user
+        order.save(update_fields=['status', 'status_changed_by', 'updated_at'])
         try:
             send_order_shipped_email(order.user.name, order.user.email, order.code, order.delivery_address)
         except Exception:
@@ -313,7 +316,8 @@ class AdminOrderReadyForPickupView(APIView):
             return Response({'detail': 'Only shipped orders can be marked as ready for pickup.'}, status=status.HTTP_400_BAD_REQUEST)
 
         order.status = 'ready_for_pickup'
-        order.save(update_fields=['status', 'updated_at'])
+        order.status_changed_by = request.user
+        order.save(update_fields=['status', 'status_changed_by', 'updated_at'])
         try:
             send_order_ready_for_pickup_email(order.user.name, order.user.email, order.code, order.delivery_address)
         except Exception:
@@ -334,7 +338,8 @@ class AdminOrderDeliverView(APIView):
             return Response({'detail': 'Only ready-for-pickup orders can be marked as delivered.'}, status=status.HTTP_400_BAD_REQUEST)
 
         order.status = 'delivered'
-        order.save(update_fields=['status', 'updated_at'])
+        order.status_changed_by = request.user
+        order.save(update_fields=['status', 'status_changed_by', 'updated_at'])
         try:
             items = [{
                 'name': i.product.name,

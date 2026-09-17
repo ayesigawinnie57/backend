@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PlatformSettings, DeliverySettings, District
+from .models import PlatformSettings, DeliverySettings, District, CookiePolicy
 
 
 class PlatformSettingsSerializer(serializers.ModelSerializer):
@@ -23,3 +23,10 @@ class DistrictSerializer(serializers.ModelSerializer):
     class Meta:
         model = District
         fields = ('id', 'name', 'price', 'region')
+
+
+class CookiePolicySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CookiePolicy
+        fields = ('content', 'updated_at')
+        read_only_fields = ('updated_at',)

@@ -183,11 +183,15 @@ class TraderOrderItem(models.Model):
         ('preparing', 'Preparing'),
         ('ready',     'Ready'),
     ]
-    trader     = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='order_items')
-    order_item = models.ForeignKey('orders.OrderItem', on_delete=models.CASCADE, related_name='trader_status')
-    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    note       = models.TextField(blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    trader            = models.ForeignKey(TraderApplication, on_delete=models.CASCADE, related_name='order_items')
+    order_item        = models.ForeignKey('orders.OrderItem', on_delete=models.CASCADE, related_name='trader_status')
+    status            = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    note              = models.TextField(blank=True)
+    status_changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='trader_order_status_changes'
+    )
+    updated_at        = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('trader', 'order_item')

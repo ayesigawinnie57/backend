@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status, generics
-from .models import PlatformSettings, DeliverySettings, District
-from .serializers import PlatformSettingsSerializer, DeliverySettingsSerializer, DistrictSerializer
+from .models import PlatformSettings, DeliverySettings, District, CookiePolicy
+from .serializers import PlatformSettingsSerializer, DeliverySettingsSerializer, DistrictSerializer, CookiePolicySerializer
 from django.contrib.auth import get_user_model
 from users.serializers import UserSerializer, UpdateProfileSerializer
 
@@ -102,3 +102,20 @@ class AdminUserCreateView(APIView):
         except Exception as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+class CookiePolicyView(APIView):
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
+
+    def get(self, request):
+        return Response(CookiePolicySerializer(CookiePolicy.get()).data)
+
+    def patch(self, request):
+        instance = CookiePolicy.get()
+        serializer = CookiePolicySerializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
